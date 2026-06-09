@@ -5,7 +5,7 @@ __pycache__/
 *.egg-info/
 dist/
 build/
-!static/js/editor/build/
+!ai/static/js/editor/build/
 venv/
 .venv/
 *.egg
@@ -17,18 +17,25 @@ venv/
 
 # Data — all user data stays local
 data/
-!services/hwfit/data/
-!services/hwfit/data/hf_models.json
+!ai/services/hwfit/data/
+!ai/services/hwfit/data/hf_models.json
 logs/
 *.log
 *.db
 *.sqlite
 *.sqlite3
 
+# Coordinator runtime output (epoch settlements may embed wallet payouts)
+settlements/
+miner_storage/
+
+# Contracts build output & secrets
+contracts/build/
+contracts/node_modules/
+contracts/deployments.local.json
+
 # Node
 node_modules/
-services/node_modules/
-services/data/
 
 # IDE / Editor
 .aider*
@@ -49,7 +56,6 @@ Thumbs.db
 # Build artifacts
 *.cache
 cache/
-output.txt.txt
 
 # Media (uploaded/generated)
 *.jpg
@@ -60,30 +66,16 @@ output.txt.txt
 *.webp
 *.tiff
 *.pdf
-
-# …except shipped demo assets in docs/ that the README links to.
-!docs/*.jpg
-!docs/*.jpeg
-!docs/*.png
-!docs/*.gif
-!docs/*.webp
-# …and curated docs/ subfolder assets (e.g. accessibility before/after shots).
+# …except curated docs assets (architecture diagrams, etc.)
 !docs/**/*.png
 !docs/**/*.jpg
-!docs/**/*.gif
-!docs/**/*.webp
 
 # Reports and temp files
 reports/
 tasks/
-scripts/compound/*.json
+ai/scripts/compound/*.json
 research_data/
 **/search_analytics.json
-
-# Internal dev/review notes — not for public repo
-dev-docs/
-# Windows-port working docs (local only, not for public repo)
-docs/windows-port/
 
 # Local config
 compound.config.json

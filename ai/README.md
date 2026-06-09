@@ -1,4 +1,9 @@
-# Odysseus
+# Odysseus — cœur IA du réseau
+
+> Ce dossier contient **le cœur IA du projet Odysseus Network** : l'assistant que les
+> utilisateurs consomment via le portail web, et que le réseau de minage fait évoluer.
+> Pour la vision d'ensemble, le minage, le token ODY et le déploiement complet,
+> voir le [README racine](../README.md).
 
 ```
 ───────────────────────────────────────────────
@@ -6,9 +11,7 @@
 ───────────────────────────────────────────────
 ```
 
-![Odysseus](docs/odysseus.jpg)
-
-A self-hosted AI workspace -- meant to be the self-hosted version of the UI experience you get from ChatGPT and Claude. But with more jank and fun. Running on your own hardware, with your own data -- local-first, privacy-first, and no trojan.
+A self-hosted AI workspace -- meant to be the self-hosted version of the UI experience you get from ChatGPT and Claude. Running on your own hardware, with your own data -- local-first, privacy-first.
 
 ## Features
   - **Chat** -- chat with any local model or API; adding them is super simple.<br>　<sub>vLLM · llama.cpp · Ollama · OpenRouter · OpenAI · GitHub Copilot</sub>
@@ -24,25 +27,6 @@ A self-hosted AI workspace -- meant to be the self-hosted version of the UI expe
   - **Works on mobile** -- looks and runs great on your phone, not just desktop.<br>　<sub>responsive · installable (PWA) · touch gestures</sub>
   - **Extras** -- more to explore, happy if you give it a go!<br>　<sub>image editor · theme editor · file uploads (vision + PDF) · web search · presets · sessions · 2FA</sub>
 
-## Demo
-A full, hover-to-play tour lives on the landing page (`docs/index.html`).
-
-<details>
-<summary>Screenshots / clips</summary>
-
-### Chat & Agents
-![Chat & Agents](docs/chat.gif)
-### Deep Research
-![Deep Research](docs/research.gif)
-### Compare
-![Compare](docs/compare.gif)
-### Documents
-![Documents](docs/document.gif)
-### Notes & Tasks
-![Notes & Tasks](docs/notes.gif)
-
-</details>
-
 ## Quick Start
 
 Defaults work out of the box: clone, run, then configure models/search/email
@@ -53,9 +37,6 @@ On first setup, Odysseus creates an admin account (`admin` unless
 `ODYSSEUS_ADMIN_USER` is set) and prints a temporary password in the terminal.
 For Docker installs, the same line is in `docker compose logs odysseus`.
 Use that for the first login, then change it in **Settings**.
-
-Contributing? See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, testing, and
-pull request guidelines.
 
 ### Docker (recommended)
 ```bash
@@ -368,11 +349,6 @@ Common internal-only ports from the default docs/compose setup:
 | `11434` | Ollama |
 | `8000-8020` | Common local model/provider APIs |
 
-## Contributing
-Help is welcome. The best entry points are fresh-install testing, provider setup
-bugs, mobile/editor polish, docs, and small focused refactors. See
-[ROADMAP.md](ROADMAP.md) for the current help-wanted list.
-
 ## Configuration
 Most setup is done inside the app with `/setup` or **Settings**. Use `.env`
 for deployment-level defaults and secrets you want present before first boot.
@@ -422,18 +398,8 @@ docs/      landing page (index.html) + preview clips
 All user data lives in `data/` (gitignored): `app.db` (sessions, messages, documents),
 `memory.json`, `presets.json`, `uploads/`, `personal_docs/`, `chroma/`, `settings.json`.
 
-## Star History
-
-<a href="https://www.star-history.com/?repos=pewdiepie-archdaemon%2Fodysseus&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/odysseus&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/odysseus&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=pewdiepie-archdaemon/odysseus&type=date&legend=top-left" />
- </picture>
-</a>
-
 ## License
-MIT -- see [LICENSE](LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
+MIT -- see [LICENSE](../LICENSE) and [ACKNOWLEDGMENTS.md](ACKNOWLEDGMENTS.md).
 
 ```
                                   |
