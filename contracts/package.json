@@ -1,0 +1,20 @@
+{
+  "name": "odysseus-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Smart contracts du réseau Odysseus : token ODY (halving), récompenses de minage, staking/dividendes.",
+  "scripts": {
+    "compile": "node scripts/compile.js",
+    "deploy": "node scripts/deploy.js",
+    "submit-epoch": "node scripts/submit-epoch.js",
+    "distribute-revenue": "node scripts/distribute-revenue.js",
+    "test": "node test/e2e.test.js"
+  },
+  "dependencies": {
+    "ethers": "^6.13.0",
+    "solc": "0.8.26"
+  },
+  "devDependencies": {
+    "ganache": "^7.9.2"
+  }
+}
