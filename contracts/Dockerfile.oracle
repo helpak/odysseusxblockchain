@@ -1,0 +1,16 @@
+# Image de l'oracle-daemon : publie automatiquement les époques on-chain.
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+RUN npm install --omit=dev --no-audit --no-fund
+
+COPY scripts/oracle-daemon.js scripts/
+
+# Progression persistée (reprise après redémarrage).
+RUN mkdir -p /state
+ENV ORACLE_STATE_FILE=/state/oracle-state.json
+VOLUME ["/state"]
+
+CMD ["node", "scripts/oracle-daemon.js"]

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S'abonner — Odysseus Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="index.html">⛵ <span>Odysseus Network</span></a>
+    <nav class="links">
+      <a href="index.html">Accueil</a>
+      <a href="#" data-ai-portal>Utiliser l'IA</a>
+      <a href="pay.html" class="active">S'abonner</a>
+      <a href="mine.html">Miner</a>
+      <a href="staking.html">Staking &amp; Récompenses</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section class="hero">
+      <h1>Accédez à l'IA, <span class="grad">par carte bancaire</span></h1>
+      <p class="lead">
+        Pas besoin de wallet ni de crypto pour utiliser Odysseus : un abonnement
+        classique suffit. Vos paiements font tourner le réseau — ils financent les
+        dividendes des stakers et l'évolution de l'IA.
+      </p>
+    </section>
+
+    <div id="pay-success" class="banner ok" style="display:none;">
+      <strong>Paiement confirmé.</strong> Votre accès est actif — connectez-vous au
+      portail IA avec l'email utilisé au paiement.
+    </div>
+    <div id="pay-cancel" class="banner warn" style="display:none;">
+      Paiement annulé — aucun débit. Vous pouvez réessayer quand vous voulez.
+    </div>
+    <div id="pay-error" class="banner warn" style="display:none;"></div>
+
+    <section>
+      <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="card">
+          <div class="tag">Abonnement</div>
+          <h3 id="price-label">—</h3>
+          <p>Accès complet à l'assistant Odysseus : chat, agent à outils, recherche
+          web, documents, mémoire persistante. Résiliable à tout moment.</p>
+          <label for="sub-email">Votre email</label>
+          <input type="text" id="sub-email" placeholder="vous@exemple.com" spellcheck="false">
+          <p style="margin-top:14px;">
+            <button class="btn primary" id="btn-subscribe">S'abonner</button>
+          </p>
+          <p class="muted" style="font-size:0.85rem;">Paiement sécurisé par notre
+          prestataire — le réseau ne voit jamais votre carte.</p>
+        </div>
+        <div class="card">
+          <h3>Où va votre argent</h3>
+          <table>
+            <tr><td>Stakers ODY (dividendes)</td><td class="num right">80 %</td></tr>
+            <tr><td>Fondateur</td><td class="num right">10 %</td></tr>
+            <tr><td>Équipe</td><td class="num right">10 %</td></tr>
+          </table>
+          <p class="muted" style="font-size:0.85rem; margin-top:10px;">
+            Les revenus sont convertis en stablecoin et distribués on-chain — chaque
+            versement est public et vérifiable sur la chaîne.
+          </p>
+        </div>
+        <div class="card">
+          <h3>Vous préférez la crypto ?</h3>
+          <p>Contribuez au lieu de payer : <a href="mine.html">minez</a> avec votre
+          GPU ou votre disque et recevez des ODY, ou
+          <a href="staking.html">stakez</a> pour toucher une part des revenus du
+          réseau.</p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="disclaimer">
+      <strong>Avertissement.</strong> L'abonnement donne accès au service IA ; il ne
+      confère ni jeton, ni droit financier. ODY est un actif numérique expérimental ;
+      les dividendes des stakers fluctuent et peuvent être nuls.
+    </div>
+    <div>Odysseus Network — open source (MIT).</div>
+  </div>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/pay.js"></script>
+</body>
+</html>

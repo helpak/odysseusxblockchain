@@ -262,6 +262,20 @@ def current_epoch_info():
     }
 
 
+@app.get("/api/epochs/{epoch_id}/settlement")
+def epoch_settlement(epoch_id: int):
+    """Règlement complet d'une époque (racine, payouts, preuves).
+
+    Public par conception : ces données finissent on-chain de toute façon.
+    Consommé par l'oracle-daemon et par tout mineur voulant vérifier sa part.
+    """
+    with db.read() as conn:
+        row = conn.execute("SELECT settlement FROM epochs WHERE id = ?", (epoch_id,)).fetchone()
+    if row is None:
+        raise HTTPException(404, f"époque {epoch_id} non réglée")
+    return json.loads(row["settlement"])
+
+
 @app.get("/api/rewards/{wallet}")
 def wallet_rewards(wallet: str):
     try:

@@ -152,6 +152,48 @@ services:
       - ./web:/usr/share/nginx/html:ro,z
     restart: unless-stopped
 
+  # ---- Profil payments : abonnements par carte (mock par défaut, stripe en prod) ----
+
+  payments:
+    profiles: ["payments"]
+    build: ./network/payments
+    ports:
+      - "${PAYMENTS_BIND:-127.0.0.1}:${PAYMENTS_PORT:-9100}:9100"
+    volumes:
+      - ./data/payments:/app/data:z
+    environment:
+      - PAYMENTS_MODE=${PAYMENTS_MODE:-mock}
+      - PAYMENTS_ADMIN_TOKEN=${PAYMENTS_ADMIN_TOKEN:-}
+      - PAYMENTS_PUBLIC_URL=${PAYMENTS_PUBLIC_URL:-http://localhost:9100}
+      - SITE_URL=${SITE_URL:-http://localhost:8088}
+      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-}
+      - STRIPE_PRICE_ID=${STRIPE_PRICE_ID:-}
+      - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET:-}
+      - MOCK_PRICE_CENTS=${MOCK_PRICE_CENTS:-1999}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+    restart: unless-stopped
+
+  # ---- Profil oracle : publication automatique des époques on-chain ----
+
+  oracle:
+    profiles: ["oracle"]
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile.oracle
+    environment:
+      - COORDINATOR_URL=http://coordinator:9000
+      - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
+      - RPC_URL=${RPC_URL:-}
+      - ORACLE_PRIVATE_KEY=${ORACLE_PRIVATE_KEY:-}
+      - REWARDS_DISTRIBUTOR_ADDRESS=${REWARDS_DISTRIBUTOR_ADDRESS:-}
+      - POLL_SECONDS=${ORACLE_POLL_SECONDS:-300}
+    volumes:
+      - oracle-state:/state
+    depends_on:
+      coordinator:
+        condition: service_started
+    restart: unless-stopped
+
   # ---- Profil fondateur : votre première puissance sur le réseau ----
 
   founder-gpu-miner:
@@ -214,6 +256,7 @@ volumes:
   searxng-data:
   chromadb-data:
   ntfy-cache:
+  oracle-state:
   founder-gpu-state:
   founder-storage-data:
   founder-storage-state:

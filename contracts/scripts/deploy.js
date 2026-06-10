@@ -52,9 +52,15 @@ async function main() {
   const oracle = ethers.getAddress(requireEnv("ORACLE_ADDRESS"));
 
   const provider = new ethers.JsonRpcProvider(rpcUrl);
-  const signer = new ethers.Wallet(requireEnv("DEPLOYER_PRIVATE_KEY"), provider);
+  // NonceManager : sérialise les nonces des transactions rapprochées (plusieurs
+  // déploiements + câblage à la suite), évitant les courses de nonce sur les
+  // RPC à minage instantané.
+  const signer = new ethers.NonceManager(
+    new ethers.Wallet(requireEnv("DEPLOYER_PRIVATE_KEY"), provider)
+  );
   const { chainId, name: netName } = await provider.getNetwork();
-  console.log(`Déploiement sur chainId=${chainId} (${netName}) depuis ${signer.address}`);
+  const deployerAddress = await signer.getAddress();
+  console.log(`Déploiement sur chainId=${chainId} (${netName}) depuis ${deployerAddress}`);
 
   console.log("Contrats :");
   const token = await deploy("OdysseusToken", signer, founder);
@@ -83,7 +89,7 @@ async function main() {
   const out = {
     chainId: chainId.toString(),
     deployedAt: new Date().toISOString(),
-    deployer: signer.address,
+    deployer: deployerAddress,
     founderWallet: founder,
     staffTreasuryWallet: staff,
     oracle,

@@ -17,7 +17,7 @@ de mineurs — et dont les revenus réels sont partagés avec ceux qui la font v
 | Brique | Dossier | Quoi |
 |---|---|---|
 | Cœur IA | [`ai/`](ai/) | L'assistant Odysseus (chat, agent, recherche, mémoire) — le produit que le public utilise |
-| Réseau | [`network/`](network/) | Coordinateur (jobs, vérifications, époques) + mineur universel zéro-dépendance |
+| Réseau | [`network/`](network/) | Coordinateur (jobs, vérifications, époques) + mineur universel zéro-dépendance + service d'abonnements CB + synchro des améliorations vers l'IA |
 | Valeur | [`contracts/`](contracts/) | Token **ODY** (1 Md plafonné, halving 730 j), claims merkle, staking + dividendes 80/10/10 |
 | Site | [`web/`](web/) | Explication du projet + portail IA + portail minage + staking |
 | Docs | [`docs/`](docs/) | [Architecture](docs/ARCHITECTURE.md) · [Tokenomics](docs/TOKENOMICS.md) · [**Légal — à lire**](docs/LEGAL.md) |
@@ -71,6 +71,11 @@ docker compose up -d --build
 | Site public | http://localhost:8088 | — |
 | Portail IA (Odysseus) | http://localhost:7000 | mot de passe admin : `docker compose logs odysseus \| grep -i password` |
 | Coordinateur (API réseau) | http://localhost:9000 | jeton admin : `docker compose logs coordinator` (ou `COORDINATOR_ADMIN_TOKEN` du `.env`) |
+| Paiements (profil `payments`) | http://localhost:9100 | jeton admin : `docker compose logs payments` (ou `PAYMENTS_ADMIN_TOKEN`) |
+
+Trois profils optionnels s'ajoutent à la pile de base : `--profile founder`
+(vos premiers nœuds, étape 2), `--profile payments` (abonnements CB, étape 5)
+et `--profile oracle` (publication automatique des époques, étape 4).
 
 Vérification : `curl http://localhost:9000/api/stats` doit répondre (époque 0,
 récompense 616 438 ODY). Configurez ensuite les modèles de l'IA dans
@@ -137,40 +142,67 @@ Une fois le câblage vérifié, scellez l'émission — plus personne (vous incl
 ne pourra brancher un autre contrat d'émission : relancez le déploiement avec
 `LOCK_MINTER=true`, ou appelez `lockMinter()` sur le token.
 
-### Étape 4 — le cycle quotidien (règlement → publication → claims)
+### Étape 4 — le cycle quotidien (règlement → publication → claims), automatique
+
+L'**oracle-daemon** fait tout : pour chaque époque terminée, il la fait régler
+par le coordinateur, récupère la racine merkle et la publie on-chain
+(idempotent, reprend après crash, saute les époques sans activité).
 
 ```bash
-# 1. Régler l'époque terminée (ex. époque 0) — agrège les points, construit l'arbre merkle :
-curl -X POST -H "X-Admin-Token: $COORDINATOR_ADMIN_TOKEN" \
-     http://localhost:9000/api/admin/epochs/0/settle
+# En service permanent via compose (renseigner ORACLE_PRIVATE_KEY, RPC_URL et
+# REWARDS_DISTRIBUTOR_ADDRESS dans .env) :
+docker compose --profile oracle up -d --build
 
-# 2. Publier la racine on-chain (l'émission ODY est créée à cet instant) :
+# Ou à la main / en cron :
 cd contracts
+COORDINATOR_URL=http://localhost:9000 COORDINATOR_ADMIN_TOKEN=… \
 RPC_URL=… ORACLE_PRIVATE_KEY=0x… REWARDS_DISTRIBUTOR_ADDRESS=0x… \
-    node scripts/submit-epoch.js ../data/settlements/epoch_0.json
-
-# 3. Chaque mineur réclame ses ODY sur http://localhost:8088/staking.html
-#    (preuve merkle récupérée automatiquement auprès du coordinateur).
+    node scripts/oracle-daemon.js --once
 ```
 
-À automatiser en cron quotidien dès que le rythme est validé à la main.
+Chaque mineur réclame ensuite ses ODY sur `http://localhost:8088/staking.html`
+(preuve merkle récupérée automatiquement auprès du coordinateur). Le mode
+manuel reste disponible : `POST /api/admin/epochs/{id}/settle` puis
+`node scripts/submit-epoch.js <fichier>`.
 
-### Étape 5 — verser les premiers revenus (dividendes)
+### Étape 5 — encaisser les abonnements et verser les dividendes
 
-Quand des revenus réels arrivent (paiements CB convertis en stablecoin sur le
-wallet trésorerie) :
+**Encaissement.** Le service de paiements gère les abonnements par carte —
+l'utilisateur n'a besoin d'aucun wallet. Page « S'abonner » du site →
+Checkout → webhook signé → registre des revenus + droit d'accès.
+
+```bash
+# Démo immédiate, circuit complet simulé (PAYMENTS_MODE=mock par défaut) :
+docker compose --profile payments up -d --build
+# -> http://localhost:8088/pay.html  (paiement simulé, accès crédité)
+
+# Production : dans .env -> PAYMENTS_MODE=stripe, STRIPE_SECRET_KEY,
+# STRIPE_PRICE_ID, STRIPE_WEBHOOK_SECRET ; côté Stripe, pointer le webhook sur
+# https://<votre-domaine-paiements>/api/stripe/webhook
+# (événements : invoice.paid, customer.subscription.deleted)
+```
+
+Suivi : `GET /api/revenue/summary` (en-tête `X-Admin-Token`) donne encaissé /
+distribué / restant ; `GET /api/entitlements/{email}` est le point
+d'intégration du portail IA (accès actif ou non).
+
+**Distribution.** Convertissez le restant en stablecoin sur le wallet
+trésorerie, puis :
 
 ```bash
 cd contracts
 RPC_URL=… TREASURY_PRIVATE_KEY=0x… DIVIDEND_VAULT_ADDRESS=0x… \
     node scripts/distribute-revenue.js 1500.50
+# puis tracer la distribution dans le registre :
+curl -X POST -H "X-Admin-Token: …" -H 'Content-Type: application/json' \
+     -d '{"amount_cents":150050,"currency":"usd","tx_hash":"0x…"}' \
+     http://localhost:9100/api/revenue/mark-distributed
 ```
 
 Le contrat répartit instantanément : 80 % stakers (au prorata du poids,
 paliers ×1 → ×2), 10 % fondateur, 10 % équipe. Les stakers encaissent sur le
 portail staking. Sur testnet, le MockUSDC déployé permet de simuler tout le
-circuit. **Important :** montage PSP/conversion à valider juridiquement —
-voir [docs/LEGAL.md](docs/LEGAL.md).
+circuit de bout en bout.
 
 ### Étape 6 — archiver la mémoire de l'IA sur le réseau de stockage
 
@@ -189,6 +221,26 @@ python3 network/coordinator/archive.py get backup-2026-06-10 /tmp/restore.enc
 
 Les chunks (4 Mo, 3 répliques visées) partent chez les nœuds de stockage, qui
 sont défiés en continu de prouver qu'ils les détiennent.
+
+### Étape 7 — fermer la boucle : installer les améliorations promues dans l'IA
+
+Quand le réseau promeut un candidat (quorum de voteurs atteint), il devient une
+**skill** du cœur IA. Dans le portail IA : Settings → API Tokens → créer un
+jeton `ody_…` (compte admin), puis :
+
+```bash
+# Voir ce qui serait installé :
+COORDINATOR_URL=http://localhost:9000 AI_URL=http://localhost:7000 \
+    python3 network/tools/evolution_sync.py
+
+# Installer réellement (statut "draft" — un admin revoit dans l'UI Skills
+# avant activation ; le quorum filtre la qualité, pas la sécurité) :
+COORDINATOR_URL=http://localhost:9000 AI_URL=http://localhost:7000 \
+AI_API_TOKEN=ody_… python3 network/tools/evolution_sync.py --install
+```
+
+Idempotent (état local des promotions déjà installées) — à mettre en cron à
+côté de l'oracle-daemon.
 
 ### Exposer en production
 
@@ -246,18 +298,31 @@ cd ai && pip install -r requirements.txt && pytest tests/   # suite du cœur IA
 | Paliers de staking, parts de revenus | `contracts/DividendVault.sol` (et re-tester !) |
 | Site / portails | `web/` (statique, zéro build) |
 
+### Où coder quoi (suite)
+
+| Vous voulez… | Allez dans… |
+|---|---|
+| Abonnements, webhooks, registre des revenus | `network/payments/main.py` |
+| Automatisation des époques on-chain | `contracts/scripts/oracle-daemon.js` |
+| Synchro des promotions vers les skills de l'IA | `network/tools/evolution_sync.py` |
+
 ### Prochaines étapes (v2 — contributions bienvenues)
+
+Déjà en place : portail d'abonnement CB (mock + Stripe), oracle-daemon
+(publication automatique des époques), synchro des promotions vers les skills
+de l'IA. Reste pour la v2 :
 
 1. **Décentraliser l'oracle** : multi-signatures sur les racines d'époque,
    vérification croisée des règlements par les voteurs, fraud proofs.
 2. **Jobs d'entraînement réels** : gradients/LoRA distribués et évaluation de
    checkpoints comme types de jobs `improve`/`vote` (le protocole ne change pas).
-3. **Intégration native des promotions** dans le cœur IA (skills auto-importées
-   depuis `/api/evolution/active`, avec revue de sécurité).
-4. **Portail de paiement** (PSP compatible crypto → conversion stablecoin →
-   `distribute-revenue` automatisé) — après validation juridique.
-5. **Stockage v2** : erasure coding entre nœuds, défis pair-à-pair, suppression
+3. **Stockage v2** : erasure coding entre nœuds, défis pair-à-pair, suppression
    de la copie de référence centrale.
+4. **Pont automatique revenus → stablecoin** (conversion programmée chez un
+   prestataire) pour que `distribute-revenue` parte tout seul du registre des
+   paiements.
+5. **Contrôle d'accès par abonnement dans le portail IA** : brancher la
+   création de comptes du cœur IA sur `GET /api/entitlements/{email}`.
 
 ## Licence
 

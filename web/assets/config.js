@@ -7,6 +7,10 @@ window.ODYSSEUS_CONFIG = {
   // Portail d'utilisation de l'IA (l'application Odysseus, dossier ai/).
   AI_PORTAL_URL: "http://localhost:7000",
 
+  // Service de paiements (abonnements par carte — network/payments/).
+  PAYMENTS_URL: "http://localhost:9100",
+  PRICE_LABEL: "19,99 $ / mois",
+
   // Chaîne EVM où les contrats sont déployés. Par défaut : Base Sepolia (testnet).
   CHAIN: {
     chainIdHex: "0x14a34", // 84532

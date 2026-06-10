@@ -33,6 +33,8 @@ miner_storage/
 contracts/build/
 contracts/node_modules/
 contracts/deployments.local.json
+contracts/deployments.1337.json
+.oracle-state.json
 
 # Node
 node_modules/
