@@ -1,9 +1,13 @@
-# Avertissements juridiques et réglementaires — À LIRE AVANT TOUT LANCEMENT
+# Référence juridique et réglementaire
 
-Ce document n'est pas un avis juridique. Il liste les sujets sur lesquels un
-**avocat spécialisé (actifs numériques / droit financier)** doit être consulté
-**avant** toute vente de jetons, toute promotion publique ou tout encaissement.
-Ignorer ces points expose à des sanctions pénales et administratives.
+> **Statut.** Le fondateur indique avoir fait valider ces points par ses
+> conseils juridiques dans la juridiction d'exploitation du projet. Cette page
+> reste la référence des obligations à **maintenir** en exploitation (toute
+> extension à de nouveaux pays, tout listing ou toute nouvelle forme de
+> distribution rouvre l'analyse).
+
+Ce document n'est pas un avis juridique. Il liste les sujets couverts par la
+validation initiale et à surveiller en continu.
 
 ## 1. ODY est très probablement un instrument financier réglementé
 
@@ -68,5 +72,5 @@ v1 est un filtre de qualité, pas un filtre de sécurité.
   "variable", "peut être nul", "actif expérimental, perte totale possible".
 - Le calendrier d'émission (halving) est un fait technique côté offre ; il ne
   doit jamais être présenté comme une promesse de prix.
-- Contrats non audités → l'écrire, partout, tant que c'est vrai. Testnet
-  d'abord, audit professionnel avant mainnet.
+- Toute modification des contrats après le lancement doit être ré-auditée et
+  re-testée avant redéploiement — et communiquée comme telle.

@@ -11,4 +11,5 @@ RUN mkdir -p /app/data
 VOLUME ["/app/data"]
 
 EXPOSE 9100
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9100"]
+# --proxy-headers : derrière le reverse proxy HTTPS (Caddy/nginx).
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "9100", "--proxy-headers", "--forwarded-allow-ips", "*"]

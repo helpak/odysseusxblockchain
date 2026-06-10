@@ -11,13 +11,15 @@ window.ODYSSEUS_CONFIG = {
   PAYMENTS_URL: "http://localhost:9100",
   PRICE_LABEL: "19,99 $ / mois",
 
-  // Chaîne EVM où les contrats sont déployés. Par défaut : Base Sepolia (testnet).
+  // Chaîne EVM où les contrats sont déployés. Par défaut : Base (mainnet).
+  // Staging/testnet : chainIdHex "0x14a34" (84532), name "Base Sepolia",
+  // rpcUrl https://sepolia.base.org, explorer https://sepolia.basescan.org.
   CHAIN: {
-    chainIdHex: "0x14a34", // 84532
-    name: "Base Sepolia",
-    rpcUrl: "https://sepolia.base.org",
+    chainIdHex: "0x2105", // 8453
+    name: "Base",
+    rpcUrl: "https://mainnet.base.org",
     currency: { name: "Ether", symbol: "ETH", decimals: 18 },
-    explorer: "https://sepolia.basescan.org",
+    explorer: "https://basescan.org",
   },
 
   // Adresses des contrats — remplir après `npm run deploy` dans contracts/

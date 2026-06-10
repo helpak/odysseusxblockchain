@@ -29,6 +29,9 @@ logs/
 settlements/
 miner_storage/
 
+# Production backups (deploy/backup.sh)
+backups/
+
 # Contracts build output & secrets
 contracts/build/
 contracts/node_modules/

@@ -25,17 +25,22 @@ npm test             # E2E sur EVM locale : minage -> claim merkle (preuves
 ## Déploiement
 
 ```bash
-export RPC_URL=https://sepolia.base.org          # TESTNET d'abord, toujours
+export RPC_URL=https://mainnet.base.org          # Base mainnet (ou la chaîne de votre choix)
 export DEPLOYER_PRIVATE_KEY=0x…
 export FOUNDER_WALLET=0x…                        # 10% des tokens + 10% des revenus à vie
 export STAFF_TREASURY_WALLET=0x…
 export ORACLE_ADDRESS=0x…                        # adresse de la clé oracle du coordinateur
-# export REVENUE_TOKEN_ADDRESS=0x…               # USDC réel ; absent => MockUSDC (testnet)
+export REVENUE_TOKEN_ADDRESS=0x…                 # USDC réel sur la chaîne cible
+                                                 # (absent => MockUSDC, environnements de test uniquement)
+export LOCK_MINTER=true                          # scelle l'émission sur le distributeur
+export TRANSFER_OWNERSHIP_TO=0x…                 # multisig : reçoit l'ownership des 3 contrats
 npm run deploy
 ```
 
 Le script écrit `deployments.<chainId>.json` et affiche les adresses à reporter
-dans le `.env` racine et dans `web/assets/config.js`.
+dans le `.env` racine et dans `web/assets/config.js`. Pour une répétition
+générale, déployer d'abord à l'identique sur testnet (Base Sepolia,
+`https://sepolia.base.org`) sans `REVENUE_TOKEN_ADDRESS`.
 
 ## Cycle opérationnel
 
@@ -47,15 +52,20 @@ node scripts/submit-epoch.js ../network/coordinator/settlements/epoch_0.json
 node scripts/distribute-revenue.js 1500.50
 ```
 
-## Sécurité & limites connues (v1)
+## Sécurité & règles d'exploitation
 
-- **Contrats non audités.** Testnet obligatoire avant toute valeur réelle ;
-  audit professionnel obligatoire avant le mainnet.
+- **Périmètre figé.** Toute modification des `.sol` doit être ré-auditée et
+  repasser la suite E2E (`npm test`) avant tout redéploiement.
 - **L'oracle est un point de confiance** : en v1, le coordinateur décide seul
-  des récompenses publiées. La décentralisation de cette étape (multi-oracles,
-  vérification par les voteurs, fraud proofs) est la priorité de la v2.
-- L'owner du token peut changer le `minter` tant que `lockMinter()` n'a pas été
-  appelé — appelez-le une fois le câblage vérifié, c'est un signal de confiance
-  fort pour la communauté.
-- Voir `docs/LEGAL.md` à la racine : un token qui verse des revenus est, dans
-  la plupart des juridictions, un instrument financier réglementé.
+  des récompenses publiées. Sa clé doit être dédiée, financée au minimum, et
+  remplaçable (`setOracle` par l'owner). La décentralisation de cette étape
+  (multi-oracles, vérification par les voteurs, fraud proofs) est la priorité
+  de la v2.
+- **`lockMinter()` en production** : une fois le câblage vérifié, scellez
+  l'émission (`LOCK_MINTER=true` au déploiement). Plus personne — fondateur
+  inclus — ne pourra brancher un autre contrat d'émission.
+- **Ownership sur multisig** : `TRANSFER_OWNERSHIP_TO=0x…` au déploiement.
+  L'owner ne contrôle que `setOracle`, `setStaffTreasury` et les transferts
+  d'ownership — jamais les fonds des stakers ni les parts (immuables).
+- Voir `docs/LEGAL.md` à la racine pour les obligations à maintenir en
+  exploitation (communication, PSP, données personnelles).

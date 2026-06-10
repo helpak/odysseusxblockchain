@@ -10,6 +10,8 @@
 // Optionnelles :
 //   REVENUE_TOKEN_ADDRESS    stablecoin des dividendes (USDC). Absent => déploie MockUSDC (TESTNET SEULEMENT)
 //   LOCK_MINTER=true         verrouille définitivement le minter après câblage
+//   TRANSFER_OWNERSHIP_TO    adresse (multisig recommandé) qui reçoit l'ownership
+//                            du token, du distributeur et du vault après câblage
 //
 // Usage : npm run compile && npm run deploy
 "use strict";
@@ -84,6 +86,20 @@ async function main() {
   if (process.env.LOCK_MINTER === "true") {
     await (await token.lockMinter()).wait();
     console.log("  token.lockMinter() — émission définitivement scellée sur le distributeur");
+  }
+
+  const newOwner = process.env.TRANSFER_OWNERSHIP_TO;
+  if (newOwner) {
+    const target = ethers.getAddress(newOwner);
+    await (await token.transferOwnership(target)).wait();
+    await (await distributor.transferOwnership(target)).wait();
+    await (await vault.transferOwnership(target)).wait();
+    console.log(`  ownership (token + distributeur + vault) -> ${target}`);
+  } else {
+    console.warn(
+      "  ATTENTION: ownership conservée par le déployeur. En production, " +
+        "transférer vers un multisig (TRANSFER_OWNERSHIP_TO=0x…)."
+    );
   }
 
   const out = {

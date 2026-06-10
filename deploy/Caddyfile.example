@@ -1,0 +1,38 @@
+# Reverse proxy HTTPS de production — Caddy (certificats automatiques).
+# Installer Caddy sur l'hôte, adapter les domaines, puis :
+#   sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile && sudo systemctl reload caddy
+#
+# Tous les services restent liés à 127.0.0.1 (défaut du docker-compose) :
+# SEUL Caddy est exposé à Internet, en HTTPS.
+
+# Site public (vitrine + portails)
+odysseus.exemple.com {
+	reverse_proxy 127.0.0.1:8088
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+# Portail IA (l'application Odysseus). Garder AUTH_ENABLED=true et passer
+# SECURE_COOKIES=true dans .env dès que ce domaine est en place.
+app.odysseus.exemple.com {
+	reverse_proxy 127.0.0.1:7000
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
+# API publique du coordinateur (mineurs externes + pages du site).
+# Restreindre CORS_ALLOW_ORIGINS au domaine du site dans .env.
+api.odysseus.exemple.com {
+	reverse_proxy 127.0.0.1:9000
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}
+
+# Service de paiements (page d'abonnement + webhook Stripe).
+# Côté Stripe : webhook -> https://pay.odysseus.exemple.com/api/stripe/webhook
+pay.odysseus.exemple.com {
+	reverse_proxy 127.0.0.1:9100
+	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+}

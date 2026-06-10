@@ -28,11 +28,12 @@ de mineurs — et dont les revenus réels sont partagés avec ceux qui la font v
 stockage · revenus partagés 80 % stakers / 10 % fondateur (immuable, à vie) /
 10 % équipe · paliers de verrouillage ×1 → ×2.
 
-> ⚠️ **Statut : v1 d'amorçage.** Contrats non audités (testnet uniquement),
-> coordinateur encore centralisé, auto-amélioration v1 = prompts/skills (poids
-> de modèle en v2). Un token à dividendes est un instrument financier dans la
-> plupart des juridictions : lisez [docs/LEGAL.md](docs/LEGAL.md) **avant**
-> toute vente ou promotion publique.
+> **Statut : prêt au lancement.** Pile vérifiée de bout en bout (suite E2E des
+> contrats + cycle complet en conditions réelles : mineurs → coordinateur →
+> oracle → claims → dividendes). Le **runbook de lancement réel** est plus bas.
+> Transparence v1 : le coordinateur est opéré par l'équipe (décentralisation en
+> v2) ; l'auto-amélioration porte sur les prompts/skills (poids de modèle en
+> v2). Obligations à maintenir en exploitation : [docs/LEGAL.md](docs/LEGAL.md).
 
 ---
 
@@ -49,7 +50,9 @@ stockage · revenus partagés 80 % stakers / 10 % fondateur (immuable, à vie) /
 
 ```bash
 git clone <votre-fork> odysseus-network && cd odysseus-network
-cp .env.example .env
+cp .env.example .env                 # environnement local / staging
+# Lancement réel : partez du modèle production, déjà structuré domaine par domaine
+cp .env.production.example .env
 ```
 
 Éditez `.env` et renseignez au minimum :
@@ -111,11 +114,14 @@ python3 network/miner/odysseus_miner.py --wallet $FOUNDER_WALLET --mode storage 
     --coordinator http://localhost:9000
 ```
 
-### Étape 3 — déployer les contrats (testnet d'abord, toujours)
+### Étape 3 — déployer les contrats (mainnet)
 
-Créez deux clés dédiées dans votre wallet : **déployeur** (financée en ETH de
-testnet — faucet Base Sepolia) et **oracle** (le coordinateur signera les
-époques avec ; petite réserve de gas).
+Préparez trois clés : **déployeur** (financée en ETH sur la chaîne cible, ne
+sert qu'au déploiement), **oracle** (clé chaude dédiée du coordinateur, gas
+minimum — elle ne peut que publier des époques) et un **multisig** (Safe…) qui
+recevra l'ownership. Chaîne par défaut : **Base** (frais faibles, USDC natif
+Circle `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` — vérifiez l'adresse sur
+circle.com avant de la coller).
 
 ```bash
 cd contracts
@@ -123,24 +129,29 @@ npm install
 npm run compile
 npm test          # E2E sur EVM locale : minage -> claims merkle -> staking -> 80/10/10
 
-export RPC_URL=https://sepolia.base.org
-export DEPLOYER_PRIVATE_KEY=0x…          # clé déployeur (jamais commitée)
+export RPC_URL=https://mainnet.base.org
+export DEPLOYER_PRIVATE_KEY=0x…          # exportée le temps du déploiement, jamais écrite
 export FOUNDER_WALLET=0x…                # reçoit les 100 M ODY (10 %)
 export STAFF_TREASURY_WALLET=0x…
 export ORACLE_ADDRESS=0x…                # adresse (publique) de la clé oracle
+export REVENUE_TOKEN_ADDRESS=0x8335…2913 # USDC natif de la chaîne cible
+export LOCK_MINTER=true                  # scelle l'émission : personne ne pourra
+                                         # brancher un autre contrat d'émission
+export TRANSFER_OWNERSHIP_TO=0x…         # le multisig devient owner des 3 contrats
 npm run deploy
 ```
 
-Le script affiche les 4 adresses et les écrit dans
+Le script affiche les adresses et les écrit dans
 `contracts/deployments.<chainId>.json`. **Reportez-les** :
 
 1. dans le `.env` racine (`ODY_TOKEN_ADDRESS`, `REWARDS_DISTRIBUTOR_ADDRESS`,
    `DIVIDEND_VAULT_ADDRESS`, `REVENUE_TOKEN_ADDRESS`) ;
-2. dans `web/assets/config.js` (bloc `CONTRACTS` + `CHAIN` si autre chaîne).
+2. dans `web/assets/config.js` (bloc `CONTRACTS` ; `CHAIN` est déjà sur Base —
+   adaptez-le si vous déployez ailleurs).
 
-Une fois le câblage vérifié, scellez l'émission — plus personne (vous inclus)
-ne pourra brancher un autre contrat d'émission : relancez le déploiement avec
-`LOCK_MINTER=true`, ou appelez `lockMinter()` sur le token.
+Pour une répétition générale avant le jour J, le même script déploie à
+l'identique sur Base Sepolia (`RPC_URL=https://sepolia.base.org`, sans
+`REVENUE_TOKEN_ADDRESS` pour obtenir un MockUSDC d'essai).
 
 ### Étape 4 — le cycle quotidien (règlement → publication → claims), automatique
 
@@ -201,8 +212,8 @@ curl -X POST -H "X-Admin-Token: …" -H 'Content-Type: application/json' \
 
 Le contrat répartit instantanément : 80 % stakers (au prorata du poids,
 paliers ×1 → ×2), 10 % fondateur, 10 % équipe. Les stakers encaissent sur le
-portail staking. Sur testnet, le MockUSDC déployé permet de simuler tout le
-circuit de bout en bout.
+portail staking. (En répétition générale sur Sepolia, le MockUSDC joue le rôle
+du stablecoin sur tout le circuit.)
 
 ### Étape 6 — archiver la mémoire de l'IA sur le réseau de stockage
 
@@ -242,14 +253,93 @@ AI_API_TOKEN=ody_… python3 network/tools/evolution_sync.py --install
 Idempotent (état local des promotions déjà installées) — à mettre en cron à
 côté de l'oracle-daemon.
 
-### Exposer en production
+### Exposer en production (HTTPS)
 
-Gardez tous les binds en `127.0.0.1` (défaut) et placez un reverse proxy HTTPS
-(Caddy, nginx, Cloudflare) devant : le site (8088), le portail IA (7000) et
-l'API publique du coordinateur (9000, nécessaire aux mineurs externes et au
-portail staking — restreignez `CORS_ALLOW_ORIGINS` à votre domaine). Les
-recommandations de sécurité du cœur IA sont dans
+Tous les services restent liés à `127.0.0.1` (défaut du compose) : **seul le
+reverse proxy HTTPS est exposé**. Un Caddyfile prêt à l'emploi couvre les
+quatre domaines (site, portail IA, API coordinateur, paiements) avec
+certificats automatiques et en-têtes de sécurité :
+
+```bash
+sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile   # adapter les domaines
+sudo systemctl reload caddy
+```
+
+Dans `.env` : `CORS_ALLOW_ORIGINS=https://<votre-site>`, `SECURE_COOKIES=true`,
+`ALLOWED_ORIGINS=https://app.<votre-site>`. Dans `web/assets/config.js` :
+`COORDINATOR_URL`, `AI_PORTAL_URL` et `PAYMENTS_URL` passent sur leurs domaines
+publics. Recommandations de sécurité du cœur IA :
 [`ai/README.md`](ai/README.md#security-notes) et [`ai/SECURITY.md`](ai/SECURITY.md).
+
+---
+
+## 🚀 Runbook de lancement réel
+
+Dans l'ordre, chaque point validé avant le suivant.
+
+**J-7 — infrastructure et répétition générale**
+
+1. Serveur dédié (8 Go+ RAM ; GPU si le cœur IA sert des modèles localement),
+   Docker + Caddy installés, DNS des 4 domaines pointés.
+2. `cp .env.production.example .env` puis remplir : wallets, jetons admin
+   (`openssl rand -hex 24`), domaines.
+3. Répétition complète sur Base Sepolia : déploiement, mineurs, une époque
+   réglée et publiée par l'oracle, un claim, une distribution MockUSDC. C'est
+   la même mécanique que le jour J, adresses près.
+
+**J-1 — chaîne et clés**
+
+4. Créer le multisig (Safe) owner ; créer la clé oracle dédiée et la financer
+   en gas (quelques dizaines d'€ suffisent pour des mois d'époques sur Base).
+5. Déployer sur mainnet (étape 3 ci-dessus, avec `LOCK_MINTER=true` et
+   `TRANSFER_OWNERSHIP_TO=<multisig>`). Vérifier sur l'explorer : premine
+   fondateur 100 M ODY, `minterLocked() == true`, owner == multisig.
+6. Reporter les adresses dans `.env` + `web/assets/config.js`.
+7. Stripe live : produit + prix mensuel (`STRIPE_PRICE_ID`), endpoint webhook
+   `https://pay.<domaine>/api/stripe/webhook` (événements `invoice.paid`,
+   `customer.subscription.deleted`) → `STRIPE_WEBHOOK_SECRET`. `PAYMENTS_MODE=stripe`.
+
+**Jour J — allumage**
+
+8. `docker compose --profile founder --profile payments --profile oracle up -d --build`
+9. Vérifications de mise en service :
+   - `curl https://api.<domaine>/api/stats` → époque 0, récompense 616 438 ODY ;
+   - logs `founder-gpu-miner` / `founder-storage-node` → points qui tombent ;
+   - page `https://<domaine>` → stats en direct ; staking → wallet se connecte
+     sur Base ; abonnement réel à prix minimal → accès actif sur
+     `GET /api/entitlements/<email>` ;
+   - mot de passe admin du portail IA récupéré et changé, modèles configurés.
+10. Archiver la première sauvegarde chiffrée (étape 6) et brancher les crons :
+
+```bash
+# crontab -e
+0 4 * * *  /chemin/depot/deploy/backup.sh >> /var/log/odysseus-backup.log 2>&1
+30 0 * * * cd /chemin/depot && COORDINATOR_URL=… AI_URL=… AI_API_TOKEN=… \
+           python3 network/tools/evolution_sync.py --install >> /var/log/odysseus-sync.log 2>&1
+```
+
+**J+1 — premier cycle économique**
+
+11. L'oracle publie l'époque 0 tout seul (logs du service `oracle`) ; vérifier
+    la racine sur l'explorer et faire un claim depuis le portail staking.
+12. Staker une part des ODY fondateur (le vault exige au moins un staker avant
+    toute distribution de revenus).
+13. Premier versement de dividendes dès que `GET /api/revenue/summary` montre
+    un solde : conversion en USDC sur le wallet trésorerie →
+    `distribute-revenue.js` → `mark-distributed`. Publier le hash de
+    transaction à la communauté : c'est votre meilleure preuve de sérieux.
+
+### Exploitation au quotidien
+
+| Quoi | Comment |
+|---|---|
+| Santé réseau | `https://api.<domaine>/api/stats` (à brancher sur un moniteur d'uptime) |
+| Époques publiées | logs du service `oracle` ; racines visibles sur l'explorer |
+| Revenus | `GET /api/revenue/summary` (jeton admin) ; distribution mensuelle recommandée |
+| Sauvegardes | `deploy/backup.sh` en cron + copie hors serveur (restic/rclone) |
+| Améliorations promues | cron `evolution_sync.py --install`, puis revue des skills *draft* dans l'UI |
+| Clés | déployeur : retirée après J-1 ; oracle : gas surveillé ; multisig : toute action owner passe par lui |
+| Mises à jour | `git pull && docker compose up -d --build` (les contrats, eux, sont immuables) |
 
 ---
 
