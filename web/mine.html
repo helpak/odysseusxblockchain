@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miner — Odysseus Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="index.html">⛵ <span>Odysseus Network</span></a>
+    <nav class="links">
+      <a href="index.html">Accueil</a>
+      <a href="#" data-ai-portal>Utiliser l'IA</a>
+      <a href="mine.html" class="active">Miner</a>
+      <a href="staking.html">Staking &amp; Récompenses</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section class="hero">
+      <h1>Commencer à <span class="grad">miner</span></h1>
+      <p class="lead">
+        Un seul fichier Python, zéro dépendance. Vous donnez votre wallet, vous choisissez ce
+        que vous fournissez, et vos points deviennent des ODY à chaque époque.
+      </p>
+    </section>
+
+    <section>
+      <h2>1. Choisissez ce que vous fournissez</h2>
+      <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="card choice selected" id="choice-gpu" onclick="selectMode('gpu')">
+          <div class="emoji">⚡</div>
+          <h3>Puissance de calcul (GPU/CPU)</h3>
+          <p>Votre machine exécute des jobs du réseau : <strong>bench</strong> (sonde de
+          capacité), et — avec un modèle local type Ollama — <strong>améliorateur</strong> et
+          <strong>voteur</strong>, les jobs les mieux payés. Pool : 70 % de la récompense
+          d'époque.</p>
+        </div>
+        <div class="card choice" id="choice-storage" onclick="selectMode('storage')">
+          <div class="emoji">💾</div>
+          <h3>Espace de stockage</h3>
+          <p>Votre disque héberge la mémoire répliquée de l'IA (blobs chiffrés en amont,
+          notamment l'archivage des conversations). Vous êtes payé en continu à chaque
+          <strong>preuve de stockage</strong>. Pool : 30 % de la récompense d'époque.</p>
+        </div>
+      </div>
+
+      <div id="opt-model" class="card" style="margin-top:18px;">
+        <label><input type="checkbox" id="has-model"> J'ai (ou je vais installer) un modèle
+        local servi en OpenAI-compatible — Ollama, vLLM, llama.cpp — pour débloquer les jobs
+        améliorateur/voteur</label>
+        <div id="model-fields" style="display:none;">
+          <label for="model-endpoint">Endpoint du modèle</label>
+          <input type="text" id="model-endpoint" value="http://localhost:11434/v1">
+          <label for="model-name">Nom du modèle</label>
+          <input type="text" id="model-name" value="llama3.1">
+        </div>
+      </div>
+
+      <div id="opt-storage" class="card" style="margin-top:18px; display:none;">
+        <label for="allocate-gb">Espace alloué au réseau (Go)</label>
+        <input type="number" id="allocate-gb" value="100" min="1">
+        <label for="storage-path">Dossier de stockage</label>
+        <input type="text" id="storage-path" value="./odysseus_storage">
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Votre wallet</h2>
+      <p class="section-sub">L'adresse EVM (MetaMask, Rabby, Ledger…) qui recevra vos ODY.
+        Le mineur n'a <strong>jamais</strong> besoin de votre clé privée — uniquement de
+        l'adresse publique.</p>
+      <input type="text" id="wallet" class="mono" placeholder="0x…" spellcheck="false">
+      <p class="muted" id="wallet-status" style="font-size:0.88rem;"></p>
+    </section>
+
+    <section>
+      <h2>3. Installez et lancez</h2>
+      <p class="section-sub">Prérequis : Python 3.10+. Téléchargez
+        <span class="mono">network/miner/odysseus_miner.py</span> depuis le dépôt du projet,
+        puis lancez :</p>
+      <pre class="cmd" id="command">…</pre>
+      <div class="copy-row"><button class="btn" onclick="copyCommand()">Copier la commande</button></div>
+      <div class="banner info">
+        Le mineur s'enregistre, reçoit ses jobs, et affiche vos points en direct. Vos points de
+        l'époque sont convertis en ODY au règlement quotidien — suivez-les et réclamez vos
+        jetons sur la page <a href="staking.html">Staking &amp; Récompenses</a>.
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="disclaimer">
+      <strong>Avertissement.</strong> Les récompenses de minage dépendent de votre contribution
+      réelle, de l'activité totale du réseau et du calendrier d'émission (halving) ; elles ne
+      constituent pas un revenu garanti. ODY est un actif numérique expérimental.
+    </div>
+    <div>Odysseus Network — open source (MIT).</div>
+  </div>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/mine.js"></script>
+</body>
+</html>

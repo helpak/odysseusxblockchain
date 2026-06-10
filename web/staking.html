@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Staking &amp; Récompenses — Odysseus Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="index.html">⛵ <span>Odysseus Network</span></a>
+    <nav class="links">
+      <a href="index.html">Accueil</a>
+      <a href="#" data-ai-portal>Utiliser l'IA</a>
+      <a href="mine.html">Miner</a>
+      <a href="staking.html" class="active">Staking &amp; Récompenses</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section class="hero">
+      <h1>Staking &amp; <span class="grad">dividendes</span></h1>
+      <p class="lead">
+        Stakez vos ODY pour recevoir votre part des revenus réels du réseau —
+        80 % de chaque versement va aux stakers, au prorata du poids. Verrouiller
+        plus longtemps augmente votre poids, jusqu'à ×2.
+      </p>
+      <div class="cta-row">
+        <button class="btn primary" id="btn-connect">Connecter mon wallet</button>
+      </div>
+      <p class="muted mono" id="account" style="margin-top:10px;"></p>
+    </section>
+
+    <div id="not-deployed" class="banner warn" style="display:none;">
+      <strong>Contrats non configurés.</strong> Les adresses des contrats sont vides dans
+      <span class="mono">assets/config.js</span>. Déployez-les
+      (<span class="mono">cd contracts &amp;&amp; npm run deploy</span>) puis reportez les adresses —
+      voir le README du dépôt.
+    </div>
+    <div id="no-wallet" class="banner info" style="display:none;">
+      Aucun wallet détecté dans ce navigateur. Installez MetaMask (ou tout wallet EVM) pour
+      staker et réclamer vos récompenses.
+    </div>
+    <div id="tx-status" class="banner ok" style="display:none;"></div>
+
+    <section id="dashboard" style="display:none;">
+      <div class="grid c3">
+        <div class="card">
+          <h3>Réseau</h3>
+          <table>
+            <tr><td>ODY stakés (total)</td><td class="num right" id="g-staked">—</td></tr>
+            <tr><td>Poids total</td><td class="num right" id="g-weight">—</td></tr>
+            <tr><td>Revenus distribués (cumul)</td><td class="num right" id="g-revenue">—</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Ma position</h3>
+          <table>
+            <tr><td>Solde ODY</td><td class="num right" id="m-balance">—</td></tr>
+            <tr><td>ODY stakés</td><td class="num right" id="m-staked">—</td></tr>
+            <tr><td>Palier</td><td class="num right" id="m-tier">—</td></tr>
+            <tr><td>Poids (part: <span id="m-share">—</span>)</td><td class="num right" id="m-weight">—</td></tr>
+            <tr><td>Déverrouillage</td><td class="num right" id="m-unlock">—</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Mes dividendes</h3>
+          <table>
+            <tr><td>Réclamables maintenant</td><td class="num right" id="m-pending">—</td></tr>
+          </table>
+          <p style="margin-top:12px;">
+            <button class="btn primary" id="btn-claim-rev">Encaisser mes dividendes</button>
+          </p>
+          <p class="muted" style="font-size:0.85rem;">
+            Simulation : sur <input type="number" id="sim-amount" value="10000"
+              style="width:110px; display:inline-block; padding:4px 8px;"> de revenus
+            distribués, votre part serait de <strong id="sim-result">—</strong>.
+            Montant illustratif — les revenus réels fluctuent et peuvent être nuls.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid c3" style="margin-top:18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="card">
+          <h3>Staker</h3>
+          <label for="stake-amount">Montant (ODY)</label>
+          <input type="number" id="stake-amount" placeholder="1000" min="0">
+          <label for="stake-tier">Palier de verrouillage</label>
+          <select id="stake-tier">
+            <option value="0">Sans verrou — poids ×1,00</option>
+            <option value="1">90 jours — poids ×1,25</option>
+            <option value="2">180 jours — poids ×1,50</option>
+            <option value="3">365 jours — poids ×2,00</option>
+          </select>
+          <p class="muted" style="font-size:0.85rem;">Ajouter à une position existante exige un
+            palier ≥ au palier actuel et repousse le déverrouillage.</p>
+          <button class="btn primary" id="btn-stake">Approuver &amp; staker</button>
+        </div>
+        <div class="card">
+          <h3>Retirer</h3>
+          <label for="unstake-amount">Montant (ODY)</label>
+          <input type="number" id="unstake-amount" placeholder="500" min="0">
+          <p class="muted" style="font-size:0.85rem;">Possible uniquement après la date de
+            déverrouillage de votre palier.</p>
+          <button class="btn" id="btn-unstake">Retirer</button>
+        </div>
+        <div class="card">
+          <h3>Récompenses de minage</h3>
+          <p class="muted" style="font-size:0.9rem;">Époques réglées par le coordinateur pour
+            votre wallet — réclamez vos ODY on-chain avec leur preuve merkle.</p>
+          <div id="mining-claims" style="margin-top:10px;"><span class="muted">—</span></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="disclaimer">
+      <strong>Avertissement.</strong> Les dividendes proviennent exclusivement des revenus réels
+      versés au contrat ; ils fluctuent et peuvent être nuls. ODY est un actif numérique
+      expérimental ; contrats non audités, testnet d'abord. Rien ici n'est un conseil en
+      investissement.
+    </div>
+    <div>Odysseus Network — open source (MIT).</div>
+  </div>
+</footer>
+
+<script src="assets/vendor/ethers.umd.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/staking.js"></script>
+</body>
+</html>

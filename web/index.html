@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Odysseus Network — l'IA qui s'améliore elle-même, propulsée par sa communauté</title>
+<meta name="description" content="Une IA open source auto-améliorée par un réseau décentralisé de mineurs GPU et de nœuds de stockage, rémunérés en ODY. Les revenus réels de l'IA sont partagés avec les stakers.">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<header>
+  <div class="container nav">
+    <a class="brand" href="index.html">⛵ <span>Odysseus Network</span></a>
+    <nav class="links">
+      <a href="index.html" class="active">Accueil</a>
+      <a href="#" data-ai-portal>Utiliser l'IA</a>
+      <a href="mine.html">Miner</a>
+      <a href="staking.html">Staking &amp; Récompenses</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="container">
+
+    <section class="hero">
+      <h1>L'IA qui s'améliore elle-même,<br><span class="grad">propulsée par sa communauté</span></h1>
+      <p class="lead">
+        Odysseus est un assistant IA open source. Son évolution n'est pas pilotée par une
+        entreprise : elle est produite par un réseau décentralisé d'<strong>améliorateurs</strong>,
+        de <strong>voteurs</strong> et de <strong>nœuds de stockage</strong> — rémunérés en
+        <strong>ODY</strong>, le jeton natif du réseau, dont l'émission diminue de moitié tous
+        les deux ans, comme Bitcoin.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="#" data-ai-portal>Utiliser l'IA</a>
+        <a class="btn" href="mine.html">Commencer à miner</a>
+        <a class="btn" href="staking.html">Staking &amp; dividendes</a>
+      </div>
+    </section>
+
+    <section>
+      <div class="grid c4">
+        <div class="card stat"><div class="value" id="stat-gpu">—</div><div class="label">mineurs GPU actifs</div></div>
+        <div class="card stat"><div class="value" id="stat-storage">—</div><div class="label">nœuds de stockage actifs</div></div>
+        <div class="card stat"><div class="value" id="stat-epoch">—</div><div class="label">époque en cours</div></div>
+        <div class="card stat"><div class="value" id="stat-reward">—</div><div class="label">récompense de l'époque</div></div>
+        <div class="card stat"><div class="value" id="stat-epoch-end">—</div><div class="label">fin de l'époque dans</div></div>
+        <div class="card stat"><div class="value" id="stat-halving">—</div><div class="label">prochain halving dans</div></div>
+        <div class="card stat"><div class="value" id="stat-replicated">—</div><div class="label">mémoire IA répliquée</div></div>
+        <div class="card stat"><div class="value" id="stat-promoted">—</div><div class="label">améliorations adoptées</div></div>
+      </div>
+      <p class="stats-note" id="stats-note">Connexion au coordinateur…</p>
+    </section>
+
+    <section id="comment">
+      <h2>Comment l'IA s'améliore</h2>
+      <p class="section-sub">
+        Le réseau fonctionne par <strong>époques d'un jour</strong>. À chaque époque, une
+        récompense fixe d'ODY est créée et partagée entre ceux qui ont réellement contribué —
+        chaque contribution est vérifiée par le protocole.
+      </p>
+      <div class="grid c3">
+        <div class="card">
+          <div class="tag">Pool GPU — 70 %</div>
+          <h3>🛠️ Les améliorateurs</h3>
+          <p>Leur machine génère des <strong>candidats d'amélioration</strong> de l'IA
+          (prompts système, skills, recettes d'agent) à partir des objectifs publiés par le
+          réseau. Un candidat adopté rapporte un bonus important.</p>
+        </div>
+        <div class="card">
+          <div class="tag">Pool GPU — 70 %</div>
+          <h3>🗳️ Les voteurs</h3>
+          <p>Ils évaluent les candidats des autres selon une grille publique. Au quorum,
+          la moyenne décide : <strong>seules les meilleures versions sont adoptées</strong>
+          et intégrées à l'IA. Voter est payé ; bien proposer est payé davantage.</p>
+        </div>
+        <div class="card">
+          <div class="tag">Pool stockage — 30 %</div>
+          <h3>💾 Les nœuds de stockage</h3>
+          <p>Ils hébergent la mémoire répliquée du réseau : conversations et connaissances,
+          <strong>chiffrées avant l'envoi</strong>. Le protocole les défie en permanence de
+          prouver qu'ils détiennent les données — chaque preuve est payée.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="boucle">
+      <h2>La boucle économique</h2>
+      <p class="section-sub">
+        Le jeton n'est pas décorrélé du produit : il est branché sur les
+        <strong>revenus réels</strong> de l'IA.
+      </p>
+      <div class="flow">
+        <div class="step"><div><strong>Le public utilise l'IA et paie par carte bancaire.</strong>
+          <p>L'utilisateur n'a pas besoin de connaître la crypto : abonnement classique sur le portail.</p></div></div>
+        <div class="step"><div><strong>Les revenus sont convertis en stablecoin et versés on-chain.</strong>
+          <p>Chaque versement dans le <span class="mono">DividendVault</span> est public et vérifiable.</p></div></div>
+        <div class="step"><div><strong>Le contrat répartit instantanément : 80 / 10 / 10.</strong>
+          <p>80 % aux stakers d'ODY au prorata de leur poids, 10 % au fondateur (taux gravé dans le
+          contrat), 10 % à l'équipe.</p></div></div>
+        <div class="step"><div><strong>Garder plus longtemps = peser plus lourd.</strong>
+          <p>Verrouiller ses ODY augmente son poids de dividendes : jusqu'à ×2 pour un verrou d'un an.
+          Les montants varient avec les revenus réels — ils peuvent être nuls.</p></div></div>
+      </div>
+    </section>
+
+    <section id="tokenomics">
+      <h2>Tokenomics</h2>
+      <p class="section-sub">Tout est dans les contrats, rien n'est modifiable en douce :
+        offre plafonnée, émission décroissante, parts de revenus immuables.</p>
+      <div class="grid c3">
+        <div class="card">
+          <h3>Offre &amp; émission</h3>
+          <table>
+            <tr><td>Offre maximale</td><td class="num right">1 000 000 000 ODY</td></tr>
+            <tr><td>Fondateur (au déploiement)</td><td class="num right">10 %</td></tr>
+            <tr><td>Émission de minage</td><td class="num right">~90 %</td></tr>
+            <tr><td>Récompense initiale</td><td class="num right">616 438 ODY / jour</td></tr>
+            <tr><td>Halving</td><td class="num right">tous les 730 jours</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Récompense d'époque</h3>
+          <table>
+            <tr><td>Pool GPU (améliorateurs + voteurs)</td><td class="num right">70 %</td></tr>
+            <tr><td>Pool stockage</td><td class="num right">30 %</td></tr>
+            <tr><td>Années 0–2</td><td class="num right">616 438 / jour</td></tr>
+            <tr><td>Années 2–4</td><td class="num right">308 219 / jour</td></tr>
+            <tr><td>Années 4–6</td><td class="num right">154 109 / jour</td></tr>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Partage des revenus</h3>
+          <table>
+            <tr><td>Stakers ODY</td><td class="num right">80 %</td></tr>
+            <tr><td>Fondateur (immuable, à vie)</td><td class="num right">10 %</td></tr>
+            <tr><td>Équipe</td><td class="num right">10 %</td></tr>
+            <tr><td colspan="2" class="muted">Paliers de poids : ×1 sans verrou · ×1,25 (90 j)
+              · ×1,5 (180 j) · ×2 (365 j)</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="transparence">
+      <h2>Transparence — où en est le réseau</h2>
+      <div class="banner warn">
+        <strong>Phase actuelle : v1 (amorçage).</strong> Les contrats ne sont pas audités et sont
+        déployés sur testnet. Le coordinateur qui vérifie les contributions et publie les
+        récompenses est encore opéré centralement (sa décentralisation — multi-oracles,
+        vérifications croisées — est la priorité de la v2). En v1, l'auto-amélioration porte
+        sur les prompts, skills et configurations de l'IA ; l'entraînement distribué des poids
+        du modèle est l'étape suivante. Tout est open source et vérifiable dans le dépôt.
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer>
+  <div class="container">
+    <div class="disclaimer">
+      <strong>Avertissement.</strong> ODY est un actif numérique expérimental. Aucun rendement
+      n'est garanti : les dividendes dépendent exclusivement des revenus réels du réseau et
+      peuvent être nuls. La valeur d'un actif numérique peut tomber à zéro. Rien sur ce site ne
+      constitue un conseil en investissement. Selon votre juridiction, un jeton donnant droit à
+      des revenus peut être un instrument financier réglementé — consultez la page LEGAL du
+      dépôt et un conseil juridique avant toute acquisition.
+    </div>
+    <div>Odysseus Network — open source (MIT). Code, contrats et documentation dans le dépôt Git du projet.</div>
+  </div>
+</footer>
+
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
