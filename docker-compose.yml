@@ -1,0 +1,219 @@
+name: odysseus-network
+
+# Pile complète du réseau Odysseus :
+#   - odysseus    : le cœur IA (portail d'utilisation, port 7000)
+#   - chromadb / searxng / ntfy : services internes de l'IA
+#   - coordinator : le cerveau du réseau de minage (port 9000)
+#   - web         : le site public (port 8088)
+# Profil "founder" (docker compose --profile founder up) :
+#   - founder-gpu-miner    : votre première puissance de calcul
+#   - founder-storage-node : votre premier nœud de stockage
+#
+# GPU pour le cœur IA : COMPOSE_FILE=docker-compose.yml:ai/docker/gpu.nvidia.yml
+
+services:
+  odysseus:
+    build: ./ai
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
+    volumes:
+      - ./data:/app/data:z
+      - ./logs:/app/logs:z
+      - ./data/ssh:/app/.ssh:z
+      - ./data/huggingface:/app/.cache/huggingface:z
+      - ./data/local:/app/.local:z
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - LLM_HOST=${LLM_HOST:-localhost}
+      - LLM_HOSTS=${LLM_HOSTS:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-}
+      - RESEARCH_LLM_ENDPOINT=${RESEARCH_LLM_ENDPOINT:-}
+      - HF_TOKEN=${HF_TOKEN:-}
+      - HUGGING_FACE_HUB_TOKEN=${HUGGING_FACE_HUB_TOKEN:-}
+      - SEARXNG_INSTANCE=http://searxng:8080
+      - CHROMADB_HOST=chromadb
+      - CHROMADB_PORT=8000
+      - DATABASE_URL=${DATABASE_URL:-sqlite:///./data/app.db}
+      - AUTH_ENABLED=${AUTH_ENABLED:-true}
+      - LOCALHOST_BYPASS=${LOCALHOST_BYPASS:-false}
+      - ODYSSEUS_ADMIN_USER=${ODYSSEUS_ADMIN_USER:-admin}
+      - ODYSSEUS_ADMIN_PASSWORD=${ODYSSEUS_ADMIN_PASSWORD:-}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-http://localhost,http://127.0.0.1}
+      - SECURE_COOKIES=${SECURE_COOKIES:-false}
+      - EMBEDDING_URL=${EMBEDDING_URL:-}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-}
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY:-}
+      - FASTEMBED_MODEL=${FASTEMBED_MODEL:-sentence-transformers/all-MiniLM-L6-v2}
+      - FASTEMBED_CACHE_PATH=${FASTEMBED_CACHE_PATH:-}
+      - CLEANUP_INTERVAL_HOURS=${CLEANUP_INTERVAL_HOURS:-24}
+      - ODYSSEUS_INPROCESS_POLLERS=${ODYSSEUS_INPROCESS_POLLERS:-1}
+      - ODYSSEUS_INPROCESS_TASKS=${ODYSSEUS_INPROCESS_TASKS:-1}
+      - ODYSSEUS_SCRIPT_HOST=${ODYSSEUS_SCRIPT_HOST:-localhost}
+      - DATA_BRAVE_API_KEY=${DATA_BRAVE_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+      - GOOGLE_PSE_CX=${GOOGLE_PSE_CX:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - SERPER_API_KEY=${SERPER_API_KEY:-}
+      - PUID=${PUID:-1000}
+      - PGID=${PGID:-1000}
+    depends_on:
+      searxng:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+
+  chromadb:
+    image: docker.io/chromadb/chroma:latest
+    ports:
+      - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
+    volumes:
+      - chromadb-data:/chroma/chroma
+    environment:
+      - ANONYMIZED_TELEMETRY=FALSE
+    restart: unless-stopped
+
+  searxng:
+    # Pinnée, pas :latest — odysseus attend le healthcheck de searxng.
+    image: docker.io/searxng/searxng:2026.5.31-7159b8aed
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        set -eu
+        if [ ! -s /etc/searxng/settings.yml ] || grep -q 'odysseus-local-searxng-json-2026-05-30\|__SEARXNG_SECRET__' /etc/searxng/settings.yml; then
+          secret="$${SEARXNG_SECRET:-}"
+          if [ -z "$$secret" ]; then
+            secret="$$(python -c 'import secrets; print(secrets.token_urlsafe(48))')"
+          fi
+          sed "s|__SEARXNG_SECRET__|$$secret|g" /tmp/searxng-settings.yml.template > /etc/searxng/settings.yml
+        fi
+        exec /usr/local/searxng/entrypoint.sh
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - searxng-data:/etc/searxng
+      - ./ai/config/searxng/settings.yml:/tmp/searxng-settings.yml.template:ro,z
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:8080/
+      - SEARXNG_SECRET=${SEARXNG_SECRET:-}
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8080/', timeout=5).read(1)\""]
+      interval: 5s
+      timeout: 6s
+      retries: 20
+      start_period: 10s
+    restart: unless-stopped
+
+  ntfy:
+    image: docker.io/binwiederhier/ntfy
+    command: serve
+    ports:
+      - "${NTFY_BIND:-127.0.0.1}:8091:80"
+    volumes:
+      - ntfy-cache:/var/cache/ntfy
+    environment:
+      - NTFY_BASE_URL=${NTFY_BASE_URL:-http://localhost:8091}
+    restart: unless-stopped
+
+  coordinator:
+    build: ./network/coordinator
+    ports:
+      - "${COORDINATOR_BIND:-127.0.0.1}:${COORDINATOR_PORT:-9000}:9000"
+    volumes:
+      # Les règlements d'époque atterrissent sur l'hôte : c'est le fichier que
+      # contracts/scripts/submit-epoch.js publie on-chain chaque jour.
+      - ./data/coordinator:/app/data:z
+      - ./data/settlements:/app/settlements:z
+    environment:
+      - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
+      - EPOCH_SECONDS=${EPOCH_SECONDS:-86400}
+      - GENESIS_TS=${GENESIS_TS:-0}
+      - GPU_POOL_BPS=${GPU_POOL_BPS:-7000}
+      - STORAGE_REPLICATION=${STORAGE_REPLICATION:-3}
+      - EVOLUTION_VOTE_QUORUM=${EVOLUTION_VOTE_QUORUM:-3}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+    restart: unless-stopped
+
+  web:
+    image: docker.io/nginx:alpine
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8088}:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro,z
+    restart: unless-stopped
+
+  # ---- Profil fondateur : votre première puissance sur le réseau ----
+
+  founder-gpu-miner:
+    profiles: ["founder"]
+    build: ./network/miner
+    command:
+      - "--wallet"
+      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      - "${FOUNDER_WALLET:-}"
+      - "--mode"
+      - "gpu"
+      - "--coordinator"
+      - "http://coordinator:9000"
+      - "--name"
+      - "founder-gpu"
+      - "--state-file"
+      - "/state/miner_state.json"
+    environment:
+      # Optionnel : un endpoint OpenAI-compatible (Ollama…) débloque les jobs
+      # améliorateur/voteur. Ex. : http://host.docker.internal:11434/v1
+      - MODEL_ENDPOINT=${FOUNDER_MODEL_ENDPOINT:-}
+      - MODEL_NAME=${FOUNDER_MODEL_NAME:-llama3.1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - founder-gpu-state:/state
+    depends_on:
+      coordinator:
+        condition: service_started
+    restart: unless-stopped
+
+  founder-storage-node:
+    profiles: ["founder"]
+    build: ./network/miner
+    command:
+      - "--wallet"
+      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      - "${FOUNDER_WALLET:-}"
+      - "--mode"
+      - "storage"
+      - "--allocate-gb"
+      - "${FOUNDER_STORAGE_GB:-50}"
+      - "--storage-path"
+      - "/storage"
+      - "--coordinator"
+      - "http://coordinator:9000"
+      - "--name"
+      - "founder-storage"
+      - "--state-file"
+      - "/state/miner_state.json"
+    volumes:
+      - founder-storage-data:/storage
+      - founder-storage-state:/state
+    depends_on:
+      coordinator:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  searxng-data:
+  chromadb-data:
+  ntfy-cache:
+  founder-gpu-state:
+  founder-storage-data:
+  founder-storage-state:
