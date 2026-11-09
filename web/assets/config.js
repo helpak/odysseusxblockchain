@@ -1,10 +1,10 @@
-// Configuration du site AQL — à adapter au déploiement (voir README, « Déployer le site »).
+// AQL site configuration — adapt to your deployment (see README, "Site (Vercel)").
 window.AQL_CONFIG = {
-  // API publique du coordinateur : IA, prix, statistiques, preuves de gains.
+  // Public coordinator API: AI, pricing, statistics, earnings proofs.
   COORDINATOR_URL: "http://localhost:9000",
 
-  // Chaîne où vivent les contrats. Production : Ethereum (chainId 1).
-  // Essais : Sepolia (chainIdHex "0xaa36a7", rpcUrl https://ethereum-sepolia-rpc.publicnode.com,
+  // Chain where the contracts live. Production: Ethereum (chainId 1).
+  // Testing: Sepolia (chainIdHex "0xaa36a7", rpcUrl https://ethereum-sepolia-rpc.publicnode.com,
   // explorer https://sepolia.etherscan.io).
   CHAIN: {
     chainIdHex: "0x1",
@@ -14,7 +14,7 @@ window.AQL_CONFIG = {
     explorer: "https://etherscan.io",
   },
 
-  // Adresses affichées par `npm run deploy` (contracts/).
+  // Addresses printed by `npm run deploy` (contracts/).
   CONTRACTS: {
     AQL_TOKEN: "",
     AQL_STAKING: "",
@@ -22,15 +22,15 @@ window.AQL_CONFIG = {
     USDT: "",
   },
 
-  // Pool Uniswap v2 AQL/USDT : source du prix de marché de l'AQL (aucun prix
-  // n'est fixé par le protocole). Vide tant que personne n'a créé le pool.
+  // Uniswap v2 AQL/USDT pool: the source of AQL's market price (the protocol
+  // sets no price). Empty until someone creates the pool.
   UNISWAP_PAIR: "",
 
-  // Service d'achat d'USDT par carte bancaire (le service vérifie l'identité
-  // de l'acheteur ; le protocole ne touche jamais de monnaie classique).
+  // Service that sells USDT by card (it verifies the buyer's identity; the
+  // protocol never touches fiat money).
   ONRAMP_URL: "",
 
-  // Dépôt public du code (liens « Code source », « Registre des décisions »).
-  // Vide : les liens ne sont pas affichés.
+  // Public code repository ("Source code", "Decision register" links).
+  // Empty: the links are hidden.
   REPO_URL: "",
 };

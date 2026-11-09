@@ -1,4 +1,4 @@
-// Ajout de crédit : approve USDT puis AQLNetwork.pay(montant, référence du compte).
+// Add credit: approve USDT, then AQLNetwork.pay(amount, account reference).
 (function () {
   "use strict";
   const { cfg, api, $, num, errorText, contractsReady, connectWallet } = window.AQL;
@@ -19,7 +19,7 @@
   try {
     const ref = localStorage.getItem("aql_account_ref");
     if (ref) $("ref").value = ref;
-  } catch { /* navigation privée */ }
+  } catch { /* private browsing */ }
 
   if (cfg.ONRAMP_URL) {
     $("btn-onramp").href = cfg.ONRAMP_URL;
@@ -34,51 +34,51 @@
       const h3 = document.createElement("h3");
       h3.textContent = `${plan.name} — ${plan.usdt} USDT`;
       const para = document.createElement("p");
-      para.textContent = `≈ ${num(plan.approx_tokens, 0)} tokens au prix actuel ` +
+      para.textContent = `≈ ${num(plan.approx_tokens, 0)} tokens at the current price ` +
         `(${num(p.price_usdt_per_million_tokens, 3)} USDT / million). ` +
-        `Limite : ${p.requests_per_minute} requêtes par minute.`;
+        `Limit: ${p.requests_per_minute} requests per minute.`;
       card.append(h3, para);
       card.addEventListener("click", () => { $("amount").value = plan.usdt; });
       $("plans").appendChild(card);
     }
   }).catch(() => {
-    $("plans").textContent = "Formules indisponibles (coordinateur injoignable).";
+    $("plans").textContent = "Plans unavailable (coordinator unreachable).";
   });
 
   $("btn-pay").addEventListener("click", async () => {
     try {
-      if (!contractsReady()) throw new Error("adresses des contrats non configurées (assets/config.js)");
+      if (!contractsReady()) throw new Error("contract addresses not configured (assets/config.js)");
       const ref = $("ref").value.trim().toLowerCase();
-      if (!/^0x[0-9a-f]{64}$/.test(ref)) throw new Error("référence invalide : 0x suivi de 64 caractères hexadécimaux");
+      if (!/^0x[0-9a-f]{64}$/.test(ref)) throw new Error("invalid reference: 0x followed by 64 hexadecimal characters");
       const amount = ethers.parseUnits(String($("amount").value || "0"), 6);
-      if (amount <= 0n) throw new Error("montant invalide");
+      if (amount <= 0n) throw new Error("invalid amount");
 
       const { signer, address } = await connectWallet();
       const usdt = new ethers.Contract(cfg.CONTRACTS.USDT, ERC20_ABI, signer);
       const network = new ethers.Contract(cfg.CONTRACTS.AQL_NETWORK, NETWORK_ABI, signer);
 
       if ((await usdt.balanceOf(address)) < amount) {
-        throw new Error("solde USDT insuffisant sur ce wallet");
+        throw new Error("not enough USDT in this wallet");
       }
       const allowance = await usdt.allowance(address, cfg.CONTRACTS.AQL_NETWORK);
       if (allowance < amount) {
-        // Particularité de l'USDT : une autorisation non nulle doit repasser à 0 avant d'être changée.
+        // USDT quirk: a non-zero allowance must be reset to 0 before it can be changed.
         if (allowance > 0n) {
-          status("Transaction 1/3 : remise à zéro de l'autorisation USDT…");
+          status("Transaction 1/3: resetting the USDT allowance to zero…");
           await (await usdt.approve(cfg.CONTRACTS.AQL_NETWORK, 0)).wait();
         }
-        status("Autorisation USDT…");
+        status("Approving USDT…");
         await (await usdt.approve(cfg.CONTRACTS.AQL_NETWORK, amount)).wait();
       }
-      status("Paiement…");
+      status("Paying…");
       const receipt = await (await network.pay(amount, ref)).wait();
       status(
-        `Paiement confirmé (bloc ${receipt.blockNumber}). Le crédit apparaît sur votre compte IA ` +
-          "après quelques confirmations.",
+        `Payment confirmed (block ${receipt.blockNumber}). The credit shows up on your AI account ` +
+          "after a few confirmations.",
         "ok"
       );
     } catch (err) {
-      status("Paiement impossible : " + errorText(err), "warn");
+      status("Payment failed: " + errorText(err), "warn");
     }
   });
 })();

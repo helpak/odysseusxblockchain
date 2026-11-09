@@ -1,11 +1,11 @@
-"""Lecture des paiements on-chain : chaque AQLNetwork.pay() crédite un compte.
+"""Reading on-chain payments: every AQLNetwork.pay() credits an account.
 
-Client JSON-RPC minimal (stdlib) : eth_blockNumber + eth_getLogs sur l'événement
+Minimal JSON-RPC client (stdlib): eth_blockNumber + eth_getLogs on the event
   Paid(address indexed payer, bytes32 indexed accountRef,
        uint256 received, uint256 minerCut, uint256 holderCut)
-L'accountRef EST l'identifiant de compte (32 octets) : le crédit arrive tout
-seul. Seuls les blocs ayant CHAIN_CONFIRMATIONS confirmations sont lus, et
-chaque log n'est compté qu'une fois (clé : tx_hash + log_index).
+The accountRef IS the account ID (32 bytes): the credit arrives
+automatically. Only blocks with CHAIN_CONFIRMATIONS confirmations are read, and
+each log is counted only once (key: tx_hash + log_index).
 """
 
 from __future__ import annotations
@@ -19,8 +19,8 @@ import accounts
 import db
 import settings
 
-# keccak256("Paid(address,bytes32,uint256,uint256,uint256)") — hashlib n'a pas
-# keccak : valeur calculée avec ethers et vérifiée par le test d'intégration.
+# keccak256("Paid(address,bytes32,uint256,uint256,uint256)") — hashlib has no
+# keccak: value computed with ethers and checked by the integration test.
 PAID_TOPIC = "0x960eb94ee51eb27e7e5e10d3a732bfe1df2676ad57ce834122d082f6ae103181"
 
 _status = {"enabled": False, "last_block": None, "last_error": "", "last_run": None}
@@ -54,7 +54,7 @@ def decode_paid(log: dict) -> dict:
 
 
 def ingest(logs: list[dict]) -> int:
-    """Enregistre et crédite des logs Paid. Retourne le nombre de nouveaux paiements."""
+    """Records and credits Paid logs. Returns the number of new payments."""
     added = 0
     with db.write() as conn:
         for log in logs:
@@ -111,7 +111,7 @@ def start_background() -> None:
             try:
                 poll_once()
                 _status["last_error"] = ""
-            except Exception as exc:  # réseau, RPC : on réessaie au prochain tour
+            except Exception as exc:  # network, RPC: retry on the next round
                 _status["last_error"] = str(exc)[:300]
             _status["last_run"] = int(time.time())
             time.sleep(settings.CHAIN_POLL_SECONDS)

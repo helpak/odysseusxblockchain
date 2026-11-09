@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Sauvegarde de production : bases (coordinateur, paiements, IA), règlements
-# d'époques et journaux. À mettre en cron quotidien, par exemple :
-#   0 4 * * * /chemin/vers/depot/deploy/backup.sh >> /var/log/odysseus-backup.log 2>&1
+# Production backup: databases (coordinator, payments, AI), epoch
+# settlements and logs. Run it daily from cron, for example:
+#   0 4 * * * /path/to/repo/deploy/backup.sh >> /var/log/odysseus-backup.log 2>&1
 #
-# Exclusions volontaires : caches de modèles (data/huggingface, data/local,
-# ré-installables) et clés SSH Cookbook (data/ssh — à sauvegarder séparément,
-# chiffré). Copiez les archives HORS du serveur (rclone, restic, S3…).
+# Deliberately excluded: model caches (data/huggingface, data/local,
+# reinstallable) and Cookbook SSH keys (data/ssh — back these up separately,
+# encrypted). Copy the archives OFF the server (rclone, restic, S3…).
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
@@ -18,7 +18,7 @@ tar czf "backups/odysseus_${STAMP}.tar.gz" \
     --exclude='data/ssh' \
     data logs 2>/dev/null || true
 
-# Rétention locale : 14 jours.
+# Local retention: 14 days.
 find backups -name 'odysseus_*.tar.gz' -mtime +14 -delete
 
 echo "[$(date -Is)] backup OK -> backups/odysseus_${STAMP}.tar.gz ($(du -h "backups/odysseus_${STAMP}.tar.gz" | cut -f1))"

@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Utiliser l'IA — AQL Network</title>
+<title>Use the AI — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,20 +17,20 @@
 <main>
   <div class="container">
     <section>
-      <span class="kicker page-kicker">Produit</span>
-      <h1 class="page-title">Utiliser l'IA</h1>
-      <p class="section-sub">L'IA du réseau AQL, servie par ses mineurs. Vous payez au token,
-        au prix du moment, avec un crédit prépayé en USDT.</p>
+      <span class="kicker page-kicker">Product</span>
+      <h1 class="page-title">Use the AI</h1>
+      <p class="section-sub">The AQL network's AI, served by its miners. You pay per token,
+        at the current price, from a prepaid USDT credit.</p>
 
       <div id="no-account" class="card" style="display:none;">
-        <h3>Créer votre compte</h3>
-        <p>Un compte, c'est une clé d'accès et un crédit. Aucune adresse email, aucune donnée
-          personnelle.</p>
+        <h3>Create your account</h3>
+        <p>An account is just an access key and a credit balance. No email address, no personal
+          data.</p>
         <p style="margin-top:12px;" class="row">
-          <button class="btn primary" id="btn-create">Créer mon compte</button>
-          <span class="muted">ou</span>
-          <input type="text" id="key-input" class="mono" placeholder="aql_… (clé existante)" style="max-width:340px;">
-          <button class="btn" id="btn-use-key">Utiliser cette clé</button>
+          <button class="btn primary" id="btn-create">Create my account</button>
+          <span class="muted">or</span>
+          <input type="text" id="key-input" class="mono" placeholder="aql_… (existing key)" style="max-width:340px;">
+          <button class="btn" id="btn-use-key">Use this key</button>
         </p>
       </div>
 
@@ -37,21 +38,21 @@
 
       <div id="has-account" style="display:none;">
         <div class="row" style="margin-bottom:12px;">
-          <span class="pill" id="balance">crédit : —</span>
-          <span class="pill" id="price">prix : —</span>
-          <a class="btn" href="pay.html">Ajouter du crédit</a>
-          <button class="btn" id="btn-clear">Effacer la conversation</button>
-          <button class="btn" id="btn-logout">Changer de compte</button>
+          <span class="pill" id="balance">credit: —</span>
+          <span class="pill" id="price">price: —</span>
+          <a class="btn" href="pay.html">Add credit</a>
+          <button class="btn" id="btn-clear">Clear conversation</button>
+          <button class="btn" id="btn-logout">Switch account</button>
         </div>
         <div id="privacy" class="banner info">
-          <strong>Confidentialité.</strong> Le mineur qui sert une requête la voit en clair : c'est
-          inévitable pour faire tourner le modèle. N'envoyez pas de données sensibles. Votre historique
-          reste uniquement dans ce navigateur.
+          <strong>Privacy.</strong> The miner that serves a request sees it in plain text: there is
+          no way around that when running the model. Don't send sensitive data. Your history stays
+          in this browser only.
         </div>
         <div class="chat-box" id="chat"></div>
         <div class="chat-input">
-          <textarea id="prompt" placeholder="Écrivez votre message… (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)"></textarea>
-          <button class="btn primary" id="btn-send">Envoyer</button>
+          <textarea id="prompt" placeholder="Write your message… (Enter to send, Shift+Enter for a new line)"></textarea>
+          <button class="btn primary" id="btn-send">Send</button>
         </div>
         <p class="muted" id="status" style="font-size:0.88rem;"></p>
       </div>

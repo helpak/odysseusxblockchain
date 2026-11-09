@@ -1,15 +1,15 @@
-"""Prix automatique de l'IA, sans intervention humaine.
+"""Automatic AI pricing, with no human intervention.
 
-Principe des frais de base d'Ethereum : à chaque nouvelle époque, le prix par
-million de tokens est ajusté selon la charge de l'époque précédente.
+Same principle as Ethereum's base fee: at each new epoch, the price per
+million tokens is adjusted according to the load of the previous epoch.
 
-    charge = requêtes attribuées / (requêtes attribuées + passages à vide)
-    nouveau prix = ancien × (1 + PAS_MAX × (charge − CIBLE) / CIBLE)
+    load = assigned requests / (assigned requests + idle polls)
+    new price = old × (1 + MAX_STEP × (load − TARGET) / TARGET)
 
-Un « passage à vide » est une interrogation d'un mineur prêt à servir alors
-que la file était vide : de la capacité non utilisée. Réseau saturé : le prix
-monte (+12,5 % au plus par époque). Réseau sous-utilisé : il baisse. Aucune
-activité : il ne bouge pas. Le prix reste entre PRICE_MIN et PRICE_MAX.
+An "idle poll" is a poll from a miner ready to serve while the queue was
+empty: unused capacity. Saturated network: the price goes up
+(+12.5% at most per epoch). Underused network: it goes down. No
+activity: it does not move. The price stays between PRICE_MIN and PRICE_MAX.
 """
 
 from __future__ import annotations
@@ -43,8 +43,8 @@ def next_price(previous_micro: int, util_bps: int | None) -> int:
 
 
 def price_for_epoch(conn, epoch_id: int) -> int:
-    """Prix de l'époque, calculé et mémorisé de proche en proche (à appeler
-    dans une transaction d'écriture)."""
+    """Price for the epoch, computed and stored step by step (call it
+    inside a write transaction)."""
     row = conn.execute(
         "SELECT epoch_id, price_micro FROM prices WHERE epoch_id <= ? ORDER BY epoch_id DESC LIMIT 1",
         (epoch_id,),
@@ -67,7 +67,7 @@ def price_for_epoch(conn, epoch_id: int) -> int:
 
 
 def cost_micro(tokens: int, price_micro_per_million: int) -> int:
-    """Coût arrondi au micro-USDT supérieur : jamais de requête gratuite."""
+    """Cost rounded up to the next micro-USDT: no request is ever free."""
     return (tokens * price_micro_per_million + 999_999) // 1_000_000
 
 

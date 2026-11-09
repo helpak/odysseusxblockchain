@@ -2,7 +2,7 @@
   "name": "aql-contracts",
   "version": "0.2.0",
   "private": true,
-  "description": "Contrats du réseau AQL : jeton sans premine, émission avec halving liée au temps, paiements USDT répartis 67/33, staking des détenteurs.",
+  "description": "AQL network contracts: token with no premine, time-based emission with halving, USDT payments split 67/33, holder staking.",
   "scripts": {
     "compile": "node scripts/compile.js",
     "deploy": "node scripts/deploy.js",

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// Opérations on-chain pour le test de bout en bout (e2e_stack.py).
-//   pay <deployments.json> <clé> <montant_usdt> <account_ref>   mint MockUSDT + approve + pay
-//   claim <deployments.json> <coordinateur> <wallet> <clé>       claimMany des gains non réclamés
-//   balances <deployments.json> <wallet>                         soldes AQL / USDT
-//   minerpool <deployments.json>                                 USDT du pool mineurs
-//   mine                                                         mine un bloc (horloge à jour)
-// RPC : variable RPC_URL.
+// On-chain operations for the end-to-end test (e2e_stack.py).
+//   pay <deployments.json> <key> <usdt_amount> <account_ref>    mint MockUSDT + approve + pay
+//   claim <deployments.json> <coordinator> <wallet> <key>       claimMany of unclaimed earnings
+//   balances <deployments.json> <wallet>                         AQL / USDT balances
+//   minerpool <deployments.json>                                 USDT in the miner pool
+//   mine                                                         mine a block (clock up to date)
+// RPC: RPC_URL variable.
 "use strict";
 
 const fs = require("fs");
@@ -72,7 +72,7 @@ async function main() {
     const network = new ethers.Contract(c.AQLNetwork, NETWORK_ABI, provider);
     console.log((await network.minerPool()).toString());
   } else {
-    console.error("commande inconnue");
+    console.error("unknown command");
     process.exit(2);
   }
 }

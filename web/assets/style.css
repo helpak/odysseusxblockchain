@@ -1,6 +1,6 @@
-/* AQL Network — système visuel du site
-   Noir profond, une seule couleur signature (vert électrique), typographie
-   massive. Toutes les pages partagent ces classes. */
+/* AQL Network — site visual system
+   Deep black, one signature colour (electric green), bold type.
+   Every page shares these classes. */
 
 :root {
   --bg: #05060a;
@@ -24,7 +24,7 @@
   --display: "Space Grotesk", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
   --body: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --mono: "JetBrains Mono", ui-monospace, "Cascadia Mono", Menlo, Consolas, monospace;
-  /* compatibilité avec les anciens noms utilisés par les scripts */
+  /* aliases for older names still used by the scripts */
   --text-dim: var(--dim);
   --card-border: var(--line);
   --bg-soft: var(--bg-2);
@@ -33,7 +33,7 @@
 }
 
 * { box-sizing: border-box; }
-/* L'attribut hidden doit toujours l'emporter sur les display des composants. */
+/* The hidden attribute must always win over component display rules. */
 [hidden] { display: none !important; }
 html { scroll-behavior: smooth; }
 @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
@@ -49,7 +49,7 @@ body {
   overflow-x: hidden;
 }
 
-/* Trame de fond : grille fine qui s'estompe vers le bas */
+/* Background: fine grid fading out towards the bottom */
 body::before {
   content: "";
   position: fixed;
@@ -75,7 +75,7 @@ h1, h2, h3 { font-family: var(--display); letter-spacing: -0.02em; line-height: 
 h2 { font-size: clamp(1.9rem, 4vw, 3rem); margin-bottom: 14px; }
 h3 { font-size: 1.15rem; margin-bottom: 10px; }
 
-/* ---------------------------------------------------------------- en-tête */
+/* ---------------------------------------------------------------- header */
 header#site-header {
   position: sticky; top: 0; z-index: 50;
   background: rgba(5, 6, 10, 0.72);
@@ -111,7 +111,7 @@ header#site-header {
   .nav .nav-cta { margin: 6px 0 0; text-align: center; }
 }
 
-/* ---------------------------------------------------------------- boutons */
+/* ---------------------------------------------------------------- buttons */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   padding: 12px 22px; border-radius: 999px; font-weight: 600; font-size: 0.98rem;
@@ -125,7 +125,7 @@ header#site-header {
 .btn .arrow { transition: transform 0.15s; }
 .btn:hover .arrow { transform: translateX(3px); }
 
-/* ---------------------------------------------------------------- hero (pages internes) */
+/* ---------------------------------------------------------------- hero (inner pages) */
 .hero { padding: 88px 0 36px; text-align: left; }
 .hero h1 { font-size: clamp(2.4rem, 6vw, 4.6rem); line-height: 1.02; letter-spacing: -0.035em; margin: 0 0 18px; }
 .hero p.lead { color: var(--dim); max-width: 720px; margin: 0 0 30px; font-size: 1.12rem; }
@@ -163,13 +163,13 @@ section { padding: 56px 0; }
   color: var(--accent); border: 1px solid rgba(200, 255, 58, 0.35); background: rgba(200, 255, 58, 0.06);
 }
 
-/* ---------------------------------------------------------------- statistiques */
+/* ---------------------------------------------------------------- statistics */
 .stat { text-align: left; padding: 22px; }
 .stat .value { font-family: var(--display); font-size: 2rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .stat .label { color: var(--dim); font-size: 0.86rem; margin-top: 2px; }
 .stats-note { color: var(--faint); font-size: 0.86rem; margin-top: 12px; }
 
-/* ---------------------------------------------------------------- flux en étapes */
+/* ---------------------------------------------------------------- step flow */
 .flow { counter-reset: step; display: grid; gap: 12px; }
 .flow .step {
   display: flex; gap: 16px; align-items: flex-start;
@@ -182,7 +182,7 @@ section { padding: 56px 0; }
 .flow .step strong { display: block; font-family: var(--display); font-size: 1.05rem; }
 .flow .step p { margin: 4px 0 0; color: var(--dim); font-size: 0.96rem; }
 
-/* ---------------------------------------------------------------- tableaux */
+/* ---------------------------------------------------------------- tables */
 table { width: 100%; border-collapse: collapse; }
 .card table { margin-top: 4px; }
 th, td { padding: 11px 4px; text-align: left; font-size: 0.95rem; border-bottom: 1px solid var(--line); }
@@ -195,7 +195,7 @@ section > .container > table, section table.wide {
 section > .container > table th, section > .container > table td { padding: 12px 16px; }
 .table-scroll { overflow-x: auto; border-radius: var(--radius); }
 
-/* ---------------------------------------------------------------- formulaires */
+/* ---------------------------------------------------------------- forms */
 label { display: block; color: var(--dim); font-size: 0.88rem; margin: 16px 0 7px; }
 input[type="text"], input[type="number"], select, textarea {
   width: 100%; padding: 12px 14px; border-radius: 12px;
@@ -215,7 +215,7 @@ pre.cmd {
 .choice:hover { border-color: var(--line-strong); transform: translateY(-2px); }
 .choice.selected { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 40px -10px var(--accent-glow); }
 
-/* ---------------------------------------------------------------- bannières & pastilles */
+/* ---------------------------------------------------------------- banners & pills */
 .banner {
   border-radius: 14px; padding: 14px 18px; font-size: 0.93rem;
   border: 1px solid; margin: 16px 0; overflow-wrap: anywhere;
@@ -242,7 +242,7 @@ pre.cmd {
   padding: 18px; min-height: 360px; max-height: 62vh; overflow-y: auto;
   display: flex; flex-direction: column; gap: 12px;
 }
-.chat-box:empty::before { content: "Votre conversation apparaîtra ici."; color: var(--faint); margin: auto; }
+.chat-box:empty::before { content: "Your conversation will appear here."; color: var(--faint); margin: auto; }
 .msg { padding: 12px 16px; border-radius: 16px; max-width: 85%; white-space: pre-wrap; word-wrap: break-word; line-height: 1.55; }
 .msg.user { align-self: flex-end; background: var(--accent); color: var(--accent-ink); border-bottom-right-radius: 6px; }
 .msg.assistant { align-self: flex-start; background: var(--surface-2); border: 1px solid var(--line); border-bottom-left-radius: 6px; }
@@ -251,7 +251,7 @@ pre.cmd {
 .chat-input { display: flex; gap: 10px; margin-top: 12px; align-items: stretch; }
 .chat-input textarea { flex: 1; min-height: 64px; resize: vertical; }
 
-/* ---------------------------------------------------------------- pied de page */
+/* ---------------------------------------------------------------- footer */
 footer#site-footer { border-top: 1px solid var(--line); margin-top: 72px; padding: 48px 0 56px; color: var(--dim); font-size: 0.9rem; }
 .foot { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 28px; }
 .foot h4 { font-family: var(--mono); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint); margin: 0 0 12px; font-weight: 500; }
@@ -265,7 +265,7 @@ footer#site-footer { border-top: 1px solid var(--line); margin-top: 72px; paddin
 }
 @media (max-width: 760px) { .foot { grid-template-columns: 1fr 1fr; } .foot > div:first-child { grid-column: 1 / -1; } }
 
-/* ---------------------------------------------------------------- révélation au défilement */
+/* ---------------------------------------------------------------- reveal on scroll */
 .reveal { opacity: 0; transform: translateY(18px); transition: opacity 0.7s ease, transform 0.7s ease; }
 .reveal.in { opacity: 1; transform: none; }
 @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
@@ -277,6 +277,30 @@ footer#site-footer { border-top: 1px solid var(--line); margin-top: 72px; paddin
   .card { padding: 20px; }
 }
 
-/* ---------------------------------------------------------------- titres des pages intérieures */
+/* ---------------------------------------------------------------- inner page titles */
 .page-kicker { margin-top: 40px; }
 .page-title { font-size: clamp(2.4rem, 5.5vw, 4.2rem); letter-spacing: -0.035em; line-height: 1.02; margin: 0 0 16px; }
+
+/* ---------------------------------------------------------------- opening animation (home) */
+.intro {
+  position: fixed; inset: 0; z-index: 300; display: grid; place-items: center;
+  background: var(--bg); cursor: pointer;
+  animation: intro-out 0.6s ease 2.7s forwards;
+}
+.intro.skip { animation: intro-out 0.3s ease forwards; }
+@keyframes intro-out { to { opacity: 0; visibility: hidden; } }
+.intro-inner { display: grid; justify-items: center; gap: 16px; }
+.intro svg { width: 132px; height: 132px; color: var(--text); overflow: visible; }
+.intro .e { stroke-dasharray: 1; stroke-dashoffset: 1; animation: intro-draw 0.5s cubic-bezier(0.6, 0, 0.2, 1) forwards; }
+.intro .n { opacity: 0; transform-box: fill-box; transform-origin: center; animation: intro-pop 0.35s ease-out forwards; }
+.intro .halo { opacity: 0; transform-box: fill-box; transform-origin: center; animation: intro-halo 1.4s ease-out 1.35s infinite; }
+@keyframes intro-draw { to { stroke-dashoffset: 0; } }
+@keyframes intro-pop { from { opacity: 0; transform: scale(0.2); } to { opacity: 1; transform: scale(1); } }
+@keyframes intro-halo { 0% { opacity: 0.7; transform: scale(0.7); } 100% { opacity: 0; transform: scale(2.4); } }
+.intro-word {
+  font-family: var(--display); font-weight: 700; font-size: 2.6rem; padding-left: 0.32em;
+  letter-spacing: 0.32em; opacity: 0; animation: intro-word 0.7s ease 1.45s forwards;
+}
+@keyframes intro-word { from { opacity: 0; letter-spacing: 0.7em; } to { opacity: 1; letter-spacing: 0.32em; } }
+.intro-sub { display: flex; gap: 10px; align-items: baseline; color: var(--dim); font-size: 0.95rem; opacity: 0; animation: intro-fade 0.6s ease 1.75s forwards; }
+@keyframes intro-fade { to { opacity: 1; } }

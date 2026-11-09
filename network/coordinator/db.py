@@ -1,4 +1,4 @@
-"""Accès SQLite du coordinateur — stdlib uniquement, WAL, écritures sérialisées."""
+"""Coordinator SQLite access — stdlib only, WAL, serialized writes."""
 
 from __future__ import annotations
 
@@ -158,7 +158,7 @@ def read():
 
 @contextmanager
 def write():
-    """Transaction d'écriture sérialisée (un seul écrivain à la fois)."""
+    """Serialized write transaction (only one writer at a time)."""
     with _write_lock:
         conn = connect()
         try:
@@ -185,9 +185,9 @@ def set_meta(conn: sqlite3.Connection, key: str, value: str) -> None:
 
 
 def init() -> dict:
-    """Crée le schéma et fige les valeurs de genèse.
+    """Creates the schema and freezes the genesis values.
 
-    Retourne {genesis_ts, admin_token, admin_token_generated}.
+    Returns {genesis_ts, admin_token, admin_token_generated}.
     """
     os.makedirs(os.path.dirname(os.path.abspath(settings.DB_PATH)), exist_ok=True)
     os.makedirs(settings.SETTLEMENTS_DIR, exist_ok=True)

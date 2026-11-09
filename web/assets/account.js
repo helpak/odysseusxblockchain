@@ -1,4 +1,4 @@
-// Mon compte : avoirs AQL valorisés au prix du pool, staking, gains de minage.
+// My account: AQL holdings valued at the pool price, staking, mining earnings.
 (function () {
   "use strict";
   const { cfg, api, $, setText, num, errorText, contractsReady, connectWallet } = window.AQL;
@@ -28,7 +28,7 @@
     "function token0() view returns (address)",
     "function getReserves() view returns (uint112, uint112, uint32)",
   ];
-  const TIERS = ["sans verrou ×1,00", "90 j ×1,25", "180 j ×1,50", "365 j ×2,00"];
+  const TIERS = ["no lock ×1.00", "90 days ×1.25", "180 days ×1.50", "365 days ×2.00"];
 
   let ctx = null; // { provider, signer, address, aql, staking, network }
   let unclaimed = [];
@@ -47,8 +47,8 @@
     $("tx").textContent = text || "";
   }
 
-  // Prix de marché : réserves du pool Uniswap v2 AQL/USDT. Aucun prix n'est
-  // fixé par le protocole.
+  // Market price: reserves of the Uniswap v2 AQL/USDT pool. The protocol sets
+  // no price.
   async function marketPrice() {
     if (!cfg.UNISWAP_PAIR) return null;
     const pair = new ethers.Contract(cfg.UNISWAP_PAIR, PAIR_ABI, ctx.provider);
@@ -68,8 +68,8 @@
     setText("m-balance", aqlFmt(balance));
     setText("m-staked", aqlFmt(staked));
     setText("m-tier", staked > 0n ? TIERS[Number(tier)] : "—");
-    setText("m-share", totalWeight > 0n ? `${num(Number((weight * 1_000_000n) / totalWeight) / 10_000, 3)} %` : "0 %");
-    setText("m-unlock", unlock > 0n ? new Date(Number(unlock) * 1000).toLocaleString("fr-FR") : "libre");
+    setText("m-share", totalWeight > 0n ? `${num(Number((weight * 1_000_000n) / totalWeight) / 10_000, 3)}%` : "0%");
+    setText("m-unlock", unlock > 0n ? AQL.date(Number(unlock)) : "unlocked");
     setText("d-dividends", usdtFmt(pending));
 
     let price = null;
@@ -83,12 +83,12 @@
       setText("d-price", "—");
       setText("d-value", "—");
       setText("d-price-note", cfg.UNISWAP_PAIR
-        ? "Pool de marché illisible pour le moment."
-        : "Aucun pool de marché AQL/USDT configuré : l'AQL n'a pas encore de prix de marché.");
+        ? "Market pool unreadable for now."
+        : "No AQL/USDT market pool configured: AQL has no market price yet.");
     } else {
       setText("d-price", num(price, 6));
       setText("d-value", num(holdings * price, 2));
-      setText("d-price-note", "Prix lu en direct dans le pool Uniswap AQL/USDT (offre et demande, aucun prix fixé).");
+      setText("d-price-note", "Price read live from the Uniswap AQL/USDT pool (supply and demand, no fixed price).");
     }
     await refreshMining(price);
   }
@@ -108,13 +108,13 @@
       }
       setText("r-aql", aqlFmt(aqlSum));
       setText("r-usdt", usdtFmt(usdtSum));
-      setText("r-epochs", unclaimed.length ? unclaimed.map((c) => c.epoch_id).join(", ") : "aucune");
-      setText("r-points", `calcul ${num(r.pending_points.gpu, 0)} · stockage ${num(r.pending_points.storage, 0)}`);
+      setText("r-epochs", unclaimed.length ? unclaimed.map((c) => c.epoch_id).join(", ") : "none");
+      setText("r-points", `compute ${num(r.pending_points.gpu, 0)} · storage ${num(r.pending_points.storage, 0)}`);
       const usdtValue = Number(ethers.formatUnits(usdtSum, 6)) +
         (price === null ? 0 : Number(ethers.formatUnits(aqlSum, 18)) * price);
       setText("d-mining", price === null ? `${usdtFmt(usdtSum)} USDT + AQL` : `${num(usdtValue, 2)} USDT`);
     } catch {
-      setText("r-epochs", "coordinateur injoignable");
+      setText("r-epochs", "coordinator unreachable");
     }
   }
 
@@ -122,17 +122,17 @@
     try {
       txStatus(`${label}…`);
       await fn();
-      txStatus(`${label} : confirmé ✓`);
+      txStatus(`${label}: confirmed ✓`);
       await refresh();
     } catch (err) {
-      txStatus(`${label} : échec — ${errorText(err)}`, false);
+      txStatus(`${label}: failed — ${errorText(err)}`, false);
     }
   }
 
   $("btn-connect").addEventListener("click", async () => {
     try {
       if (!contractsReady()) {
-        notice("Adresses des contrats non configurées (assets/config.js) : déployez les contrats puis reportez-les.");
+        notice("Contract addresses not configured (assets/config.js): deploy the contracts, then fill them in.");
         return;
       }
       const w = await connectWallet();
@@ -143,41 +143,41 @@
         network: new ethers.Contract(C.AQL_NETWORK, NETWORK_ABI, w.signer),
       };
       setText("account", `${ctx.address} (${cfg.CHAIN.name})`);
-      $("btn-connect").textContent = "Actualiser";
+      $("btn-connect").textContent = "Refresh";
       $("dashboard").style.display = "";
       notice("");
       await refresh();
     } catch (err) {
-      notice("Connexion impossible : " + errorText(err));
+      notice("Could not connect: " + errorText(err));
     }
   });
 
   $("btn-stake").addEventListener("click", () => run("Staking", async () => {
     const amount = ethers.parseUnits($("stake-amount").value || "0", 18);
-    if (amount <= 0n) throw new Error("montant invalide");
+    if (amount <= 0n) throw new Error("invalid amount");
     if ((await ctx.aql.allowance(ctx.address, C.AQL_STAKING)) < amount) {
       await (await ctx.aql.approve(C.AQL_STAKING, amount)).wait();
     }
     await (await ctx.staking.stake(amount, Number($("stake-tier").value))).wait();
   }));
 
-  $("btn-unstake").addEventListener("click", () => run("Retrait", async () => {
+  $("btn-unstake").addEventListener("click", () => run("Unstaking", async () => {
     const amount = ethers.parseUnits($("unstake-amount").value || "0", 18);
-    if (amount <= 0n) throw new Error("montant invalide");
+    if (amount <= 0n) throw new Error("invalid amount");
     await (await ctx.staking.unstake(amount)).wait();
   }));
 
-  $("btn-claim-rev").addEventListener("click", () => run("Encaissement des revenus", async () => {
+  $("btn-claim-rev").addEventListener("click", () => run("Collecting income", async () => {
     await (await ctx.staking.claimRevenue()).wait();
   }));
 
-  $("btn-claim-mining").addEventListener("click", () => run("Réclamation des gains de minage", async () => {
-    if (!unclaimed.length) throw new Error("rien à réclamer");
+  $("btn-claim-mining").addEventListener("click", () => run("Claiming mining earnings", async () => {
+    if (!unclaimed.length) throw new Error("nothing to claim");
     const items = unclaimed.map((c) => ({
       epochId: c.epoch_id, index: c.index, aqlAmount: c.aql_wei, usdtAmount: c.usdt, proof: c.proof,
     }));
     await (await ctx.network.claimMany(ctx.address, items)).wait();
   }));
 
-  if (!window.ethereum) notice("Aucun wallet détecté : installez MetaMask (ou un wallet EVM) pour voir votre compte.");
+  if (!window.ethereum) notice("No wallet detected: install MetaMask (or any EVM wallet) to see your account.");
 })();

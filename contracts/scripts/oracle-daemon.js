@@ -1,23 +1,23 @@
 #!/usr/bin/env node
-// Oracle-daemon AQL : chaque oracle fait tourner SA propre instance, avec SA clé.
+// AQL oracle daemon: each oracle runs ITS OWN instance, with ITS OWN key.
 //
-// Pour chaque époque terminée et non finalisée on-chain :
-//   1. demande au coordinateur de la régler (POST /api/admin/epochs/{id}/settle,
-//      idempotent : "déjà réglée" est un succès), en lui transmettant l'USDT du
-//      pool mineurs disponible on-chain (AQLNetwork.minerPool) ;
-//   2. récupère le règlement (GET /api/epochs/{id}/settlement) : racine merkle,
-//      total AQL, total USDT ;
-//   3. vote on-chain (AQLNetwork.proposeEpoch). L'époque est finalisée — et
-//      l'AQL de l'époque créé — quand `threshold` oracles ont voté exactement
-//      les mêmes valeurs ;
-//   4. mémorise sa progression (reprise après crash).
-// Les époques sans aucune activité sont sautées. Un vote déjà émis n'est pas
-// renvoyé : le daemon attend simplement les autres oracles.
+// For each epoch that is finished and not yet finalized on-chain:
+//   1. asks the coordinator to settle it (POST /api/admin/epochs/{id}/settle,
+//      idempotent: "already settled" counts as success), passing it the USDT of
+//      the miner pool available on-chain (AQLNetwork.minerPool);
+//   2. fetches the settlement (GET /api/epochs/{id}/settlement): merkle root,
+//      AQL total, USDT total;
+//   3. votes on-chain (AQLNetwork.proposeEpoch). The epoch is finalized — and
+//      the epoch's AQL created — once `threshold` oracles have voted exactly
+//      the same values;
+//   4. saves its progress (resumes after a crash).
+// Epochs with no activity at all are skipped. A vote already cast is not
+// sent again: the daemon simply waits for the other oracles.
 //
-// Env requis : COORDINATOR_URL, COORDINATOR_ADMIN_TOKEN, RPC_URL,
-//              ORACLE_PRIVATE_KEY, AQL_NETWORK_ADDRESS
-// Optionnel  : ORACLE_STATE_FILE (./.oracle-state.json), POLL_SECONDS (300)
-// Usage      : node scripts/oracle-daemon.js [--once]
+// Required env: COORDINATOR_URL, COORDINATOR_ADMIN_TOKEN, RPC_URL,
+//               ORACLE_PRIVATE_KEY, AQL_NETWORK_ADDRESS
+// Optional    : ORACLE_STATE_FILE (./.oracle-state.json), POLL_SECONDS (300)
+// Usage       : node scripts/oracle-daemon.js [--once]
 "use strict";
 
 const fs = require("fs");
@@ -36,7 +36,7 @@ const ABI = [
 function requireEnv(name) {
   const v = process.env[name];
   if (!v) {
-    console.error(`Variable d'environnement manquante: ${name}`);
+    console.error(`Missing environment variable: ${name}`);
     process.exit(1);
   }
   return v;
@@ -49,8 +49,8 @@ const POLL_SECONDS = Number(process.env.POLL_SECONDS || 300);
 const ONCE = process.argv.includes("--once");
 
 const provider = new ethers.JsonRpcProvider(requireEnv("RPC_URL"));
-// NonceManager : plusieurs votes peuvent partir d'affilée quand le daemon
-// rattrape des époques en retard ; la sérialisation des nonces évite les courses.
+// NonceManager: several votes may go out back to back when the daemon
+// catches up on late epochs; serializing the nonces avoids races.
 const oracle = new ethers.NonceManager(new ethers.Wallet(requireEnv("ORACLE_PRIVATE_KEY"), provider));
 const network = new ethers.Contract(ethers.getAddress(requireEnv("AQL_NETWORK_ADDRESS")), ABI, oracle);
 
@@ -88,31 +88,32 @@ function settlementValues(body) {
   };
 }
 
-// Règle (si besoin) puis retourne {root, aqlTotal, usdtTotal} | {skip} | {wait}.
+// Settles (if needed), then returns {root, aqlTotal, usdtTotal} | {skip} | {wait}.
 async function settlementFor(epochId) {
   const existing = await api("GET", `/api/epochs/${epochId}/settlement`);
   if (existing.status === 200) return settlementValues(existing.body);
 
-  // L'USDT disponible est lu on-chain au moment du règlement : la racine ne
-  // peut jamais promettre plus que le pool (le contrat le refuserait).
+  // The available USDT is read on-chain at settlement time: the root can
+  // never promise more than the pool (the contract would reject it).
   const usdtPool = await network.minerPool();
   const settle = await api("POST", `/api/admin/epochs/${epochId}/settle?usdt_pool=${usdtPool}`);
   if (settle.status === 200) {
     const fresh = await api("GET", `/api/epochs/${epochId}/settlement`);
     if (fresh.status === 200) return settlementValues(fresh.body);
-    return { wait: "réglée mais settlement illisible" };
+    return { wait: "settled but settlement unreadable" };
   }
 
+  // These substrings match the coordinator's error messages (network/coordinator/rewards.py).
   const detail = String(settle.body.detail || "");
-  if (detail.includes("déjà réglée")) {
+  if (detail.includes("already settled")) {
     const again = await api("GET", `/api/epochs/${epochId}/settlement`);
     if (again.status === 200) return settlementValues(again.body);
-    return { wait: "réglée mais settlement illisible" };
+    return { wait: "settled but settlement unreadable" };
   }
-  if (detail.includes("aucune activité")) return { skip: "aucune activité" };
-  if (detail.includes("récompense nulle")) return { skip: "émission terminée" };
-  if (detail.includes("pas terminée")) return { wait: "époque en cours côté coordinateur" };
-  return { wait: `réponse inattendue (${settle.status}): ${detail}` };
+  if (detail.includes("no activity")) return { skip: "no activity" };
+  if (detail.includes("zero reward")) return { skip: "emission finished" };
+  if (detail.includes("not finished")) return { wait: "epoch still in progress on the coordinator" };
+  return { wait: `unexpected response (${settle.status}): ${detail}` };
 }
 
 function revertReason(err) {
@@ -123,21 +124,21 @@ async function processEpochs() {
   const state = loadState();
   const current = await api("GET", "/api/epochs/current");
   if (current.status !== 200) {
-    log(`coordinateur injoignable (${current.status}) — nouvel essai au prochain tour`);
+    log(`coordinator unreachable (${current.status}) — retrying on the next round`);
     return;
   }
-  // Borne commune : on ne traite que les époques terminées pour le coordinateur ET pour la chaîne.
+  // Common bound: only process epochs that are finished for the coordinator AND for the chain.
   const chainFinished = Number(await network.finishedEpochs());
   const upTo = Math.min(Number(current.body.epoch_id), chainFinished);
   if (state.next_epoch >= upTo) {
     log(
-      `rien à voter : prochaine époque ${state.next_epoch} ; époques terminées ` +
-        `côté coordinateur ${current.body.epoch_id}, côté chaîne ${chainFinished}`
+      `nothing to vote on: next epoch ${state.next_epoch}; finished epochs ` +
+        `on the coordinator ${current.body.epoch_id}, on the chain ${chainFinished}`
     );
     return;
   }
-  // Strictement dans l'ordre : on ne traite une époque qu'une fois la
-  // précédente finalisée (ou sans activité).
+  // Strictly in order: an epoch is only processed once the previous
+  // one is finalized (or had no activity).
   for (let epochId = state.next_epoch; epochId < upTo; epochId++) {
     const advance = () => {
       state.next_epoch = epochId + 1;
@@ -151,12 +152,12 @@ async function processEpochs() {
 
     const s = await settlementFor(epochId);
     if (s.skip) {
-      log(`époque ${epochId}: ignorée (${s.skip})`);
+      log(`epoch ${epochId}: skipped (${s.skip})`);
       advance();
       continue;
     }
     if (s.wait) {
-      log(`époque ${epochId}: en attente (${s.wait})`);
+      log(`epoch ${epochId}: waiting (${s.wait})`);
       break;
     }
 
@@ -165,22 +166,22 @@ async function processEpochs() {
     } catch (err) {
       const reason = revertReason(err);
       if (reason.includes("already voted")) {
-        // On s'arrête là : l'époque suivante se partagerait le même pool USDT.
-        log(`époque ${epochId}: vote déjà émis, en attente des autres oracles`);
+        // Stop here: the next epoch would share the same USDT pool.
+        log(`epoch ${epochId}: vote already cast, waiting for the other oracles`);
         break;
       }
-      log(`époque ${epochId}: vote impossible (${reason})`);
+      log(`epoch ${epochId}: cannot vote (${reason})`);
       break;
     }
 
     log(
-      `époque ${epochId}: vote ${s.root} — ${ethers.formatEther(s.aqlTotal)} AQL, ` +
+      `epoch ${epochId}: voting ${s.root} — ${ethers.formatEther(s.aqlTotal)} AQL, ` +
         `${ethers.formatUnits(s.usdtTotal, 6)} USDT…`
     );
     const receipt = await (await network.proposeEpoch(epochId, s.root, s.aqlTotal, s.usdtTotal)).wait();
     const finalized = (await network.epochRoot(epochId)) !== ethers.ZeroHash;
-    log(`époque ${epochId}: vote enregistré (tx ${receipt.hash})${finalized ? " — FINALISÉE" : " — en attente du seuil"}`);
-    if (!finalized) break; // époque suivante seulement après finalisation de celle-ci
+    log(`epoch ${epochId}: vote recorded (tx ${receipt.hash})${finalized ? " — FINALIZED" : " — waiting for threshold"}`);
+    if (!finalized) break; // next epoch only once this one is finalized
     advance();
   }
 }
@@ -188,15 +189,15 @@ async function processEpochs() {
 async function main() {
   const me = await oracle.getAddress();
   if (!(await network.isOracle(me))) {
-    console.error(`${me} n'est pas un oracle de ${network.target} : arrêt.`);
+    console.error(`${me} is not an oracle of ${network.target}: stopping.`);
     process.exit(1);
   }
-  log(`oracle ${me} | réseau ${network.target} | seuil ${await network.threshold()} | état ${STATE_FILE}`);
+  log(`oracle ${me} | network ${network.target} | threshold ${await network.threshold()} | state ${STATE_FILE}`);
   for (;;) {
     try {
       await processEpochs();
     } catch (err) {
-      log(`erreur: ${revertReason(err)}`);
+      log(`error: ${revertReason(err)}`);
     }
     if (ONCE) return;
     await new Promise((resolve) => setTimeout(resolve, POLL_SECONDS * 1000));

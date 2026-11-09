@@ -1,18 +1,18 @@
-"""Auto-amélioration prouvée au benchmark.
+"""Self-improvement, proven on the benchmark.
 
-1. Un AMÉLIORATEUR (nœud de calcul) reçoit le prompt système actuel du réseau
-   et des exemples de tâches ; il propose un prompt candidat.
-2. Des MESUREURS tirés au sort (autre nœud, autre wallet) répondent à une série
-   de tâches générées (nouvelle graine à chaque mesure) avec le prompt actuel
-   PUIS avec le candidat. Le coordinateur corrige lui-même les réponses.
-3. Décision : promu si MEASURES_REQUIRED mesureurs constatent chacun au moins
-   MEASURE_MIN_GAIN bonnes réponses de plus ; rejeté si MEASURES_REQUIRED
-   mesureurs ne le constatent pas ; sinon une mesure de plus départage.
-4. Promu : il devient le prompt système de TOUT le réseau (ajouté à chaque
-   requête servie) et son auteur reçoit un bonus de points.
+1. An IMPROVER (compute node) receives the network's current system prompt
+   and example tasks; it proposes a candidate prompt.
+2. Randomly drawn MEASURERS (another node, another wallet) answer a series of
+   generated tasks (new seed for every measurement) with the current prompt
+   THEN with the candidate. The coordinator grades the answers itself.
+3. Decision: promoted if MEASURES_REQUIRED measurers each see at least
+   MEASURE_MIN_GAIN more correct answers; rejected if MEASURES_REQUIRED
+   measurers do not; otherwise one more measurement breaks the tie.
+4. Promoted: it becomes the system prompt of the WHOLE network (added to every
+   request served) and its author receives bonus points.
 
-Les tâches changent à chaque mesure : impossible de glisser les réponses dans
-un prompt. Les votes subjectifs de la v1 sont supprimés.
+The tasks change with every measurement: answers cannot be slipped into a
+prompt. The subjective votes of v1 are gone.
 """
 
 from __future__ import annotations
@@ -27,16 +27,16 @@ import settings
 import tasks
 
 DEFAULT_PROMPT = (
-    "Tu es l'assistant du réseau AQL. Réponds dans la langue de l'utilisateur, "
-    "de façon exacte et concise. Pour un calcul ou un raisonnement, procède étape "
-    "par étape avant de donner la réponse finale. Si tu ne sais pas, dis-le."
+    "You are the AQL network assistant. Answer in the user's language, accurately "
+    "and concisely. For a calculation or a reasoning question, work step by step "
+    "before giving the final answer. If you don't know, say so."
 )
 
 IMPROVE_INSTRUCTIONS = (
-    "Tu améliores le prompt système d'un assistant IA. Objectif : plus de bonnes "
-    "réponses sur des tâches de calcul, de logique et de raisonnement court comme "
-    "les exemples fournis. Rédige UNIQUEMENT le nouveau prompt système complet, "
-    "sans préambule, en moins de 3 000 caractères."
+    "You are improving the system prompt of an AI assistant. Goal: more correct "
+    "answers on calculation, logic and short reasoning tasks like the examples "
+    "provided. Write ONLY the complete new system prompt, with no preamble, in "
+    "under 3,000 characters."
 )
 
 
@@ -67,10 +67,10 @@ def improve_job(conn, node) -> tuple[dict, dict] | None:
     return payload, {"baseline_id": current["id"]}
 
 
-# Un candidat peut améliorer le benchmark tout en glissant une consigne nuisible
-# (« recommande tel site »). Le prompt promu s'applique à TOUS les utilisateurs :
-# on refuse donc tout ce qui ressemble à un lien, une adresse, un identifiant de
-# contact ou du code exécutable. Un bon prompt système n'en a jamais besoin.
+# A candidate could improve the benchmark while slipping in a harmful instruction
+# ("recommend this website"). The promoted prompt applies to ALL users, so
+# anything that looks like a link, an address, a contact handle or executable
+# code is refused. A good system prompt never needs any of those.
 _FORBIDDEN = re.compile(
     r"https?://|www\.|\b[\w.-]+\.(?:com|net|org|io|xyz|app|dev|fr|co|ru|cn|link|me)\b"
     r"|@[\w.-]+|<\s*script|javascript:|\bt\.me\b|telegram|whatsapp|discord\.gg"
@@ -81,12 +81,12 @@ _FORBIDDEN = re.compile(
 
 def candidate_problem(content: str) -> str | None:
     if not (50 <= len(content) <= settings.CANDIDATE_MAX_CHARS):
-        return f"candidat hors limites (50–{settings.CANDIDATE_MAX_CHARS} caractères)"
+        return f"candidate out of bounds (50–{settings.CANDIDATE_MAX_CHARS} characters)"
     if any(ord(c) < 32 and c not in "\n\t" for c in content):
-        return "caractères de contrôle interdits"
+        return "control characters are not allowed"
     match = _FORBIDDEN.search(content)
     if match:
-        return f"contenu interdit dans un prompt système (« {match.group(0)[:30]} ») : liens, adresses, contacts et code sont refusés"
+        return f"content not allowed in a system prompt (\"{match.group(0)[:30]}\"): links, addresses, contacts and code are refused"
     return None
 
 
@@ -97,21 +97,22 @@ def submit_improve(conn, node, job_payload: dict, result: dict, epoch_id: int) -
         return 0, problem, False
     current = active(conn)
     if job_payload.get("baseline_id", "") != current["id"]:
-        return 0, "le prompt du réseau a changé entre-temps : candidat écarté", False
+        return 0, "the network prompt changed in the meantime: candidate discarded", False
     digest = hashlib.sha256(content.encode()).hexdigest()
     if conn.execute("SELECT 1 FROM candidates WHERE id = ?", (digest[:16],)).fetchone():
-        return 0, "candidat identique déjà proposé", False
+        return 0, "identical candidate already proposed", False
     conn.execute(
         "INSERT INTO candidates (id, epoch_id, author_node, author_wallet, baseline_id, content, created_at)"
         " VALUES (?, ?, ?, ?, ?, ?, ?)",
         (digest[:16], epoch_id, node["id"], node["wallet"], current["id"], content, int(time.time())),
     )
-    return settings.POINTS_IMPROVE_ATTEMPT, f"candidat {digest[:16]} proposé, en attente de mesures", True
+    return settings.POINTS_IMPROVE_ATTEMPT, f"candidate {digest[:16]} proposed, awaiting measurements", True
 
 
 def measure_job(conn, node) -> tuple[dict, dict] | None:
-    """Un candidat en mesure, ni écrit ni déjà mesuré par ce nœud ou ce wallet,
-    qui n'a pas déjà assez de mesures terminées ou en cours."""
+    """A candidate being measured, neither written nor already measured by this
+    node or this wallet, that does not already have enough measurements done or
+    in progress."""
     rows = conn.execute(
         """
         SELECT c.* FROM candidates c
@@ -164,12 +165,12 @@ def _decide(conn, candidate) -> str | None:
 
 
 def submit_measure(conn, node, job_payload: dict, result: dict, epoch_id: int) -> tuple[int, str, dict | None]:
-    """Retourne (points, message, promotion) — promotion = {author_node} si promu."""
+    """Returns (points, message, promotion) — promotion = {author_node} if promoted."""
     candidate = conn.execute(
         "SELECT * FROM candidates WHERE id = ?", (job_payload["candidate_id"],)
     ).fetchone()
     if candidate is None or candidate["status"] != "measuring":
-        return 0, "candidat déjà décidé", None
+        return 0, "candidate already decided", None
     series = tasks.generate(int(job_payload["seed"]), settings.MEASURE_TASKS)
     baseline_answers = result.get("baseline") or {}
     candidate_answers = result.get("candidate") or {}
@@ -178,7 +179,7 @@ def submit_measure(conn, node, job_payload: dict, result: dict, epoch_id: int) -
         if str(baseline_answers.get(str(t["id"]), "")).strip() and str(candidate_answers.get(str(t["id"]), "")).strip()
     )
     if answered < len(series) * 0.8:
-        return 0, f"mesure incomplète ({answered}/{len(series)} tâches répondues) : refusée", None
+        return 0, f"incomplete measurement ({answered}/{len(series)} tasks answered): refused", None
 
     b = tasks.score(series, baseline_answers)
     c = tasks.score(series, candidate_answers)
@@ -189,7 +190,7 @@ def submit_measure(conn, node, job_payload: dict, result: dict, epoch_id: int) -
     )
     text = "".join(str(v) for v in list(baseline_answers.values()) + list(candidate_answers.values()))
     points = max(1, len(text) // 4)
-    message = f"mesure : actuel {b}/{len(series)}, candidat {c}/{len(series)}"
+    message = f"measurement: current {b}/{len(series)}, candidate {c}/{len(series)}"
 
     decision = _decide(conn, candidate)
     promotion = None
@@ -198,9 +199,9 @@ def submit_measure(conn, node, job_payload: dict, result: dict, epoch_id: int) -
             "UPDATE candidates SET status = ?, decided_at = ? WHERE id = ?",
             (decision, int(time.time()), candidate["id"]),
         )
-        message += f" — candidat {decision}"
+        message += f" — candidate {decision}"
         if decision == "promoted":
-            # Les autres candidats étaient mesurés contre l'ancien prompt.
+            # The other candidates were measured against the old prompt.
             conn.execute(
                 "UPDATE candidates SET status = 'superseded', decided_at = ? WHERE status = 'measuring'",
                 (int(time.time()),),
@@ -245,7 +246,7 @@ def stats(conn) -> dict:
         "measuring": by.get("measuring", 0),
         "promoted": by.get("promoted", 0),
         "rejected": by.get("rejected", 0) + by.get("superseded", 0),
-        "active_prompt_id": active(conn)["id"] or "par défaut",
+        "active_prompt_id": active(conn)["id"] or "default",
     }
 
 

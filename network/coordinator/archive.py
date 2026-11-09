@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""CLI d'archivage vers le réseau de stockage Odysseus (stdlib uniquement).
+"""Archiving CLI for the Odysseus storage network (stdlib only).
 
-Usage :
-    python3 archive.py put <clé> <fichier>
-    python3 archive.py get <clé> <fichier_sortie>
+Usage:
+    python3 archive.py put <key> <file>
+    python3 archive.py get <key> <output_file>
 
-Env :
-    COORDINATOR_URL          (défaut http://127.0.0.1:9000)
-    COORDINATOR_ADMIN_TOKEN  (obligatoire)
+Env:
+    COORDINATOR_URL          (default http://127.0.0.1:9000)
+    COORDINATOR_ADMIN_TOKEN  (required)
 
-Important : chiffrez les données sensibles AVANT l'archivage — le réseau de
-stockage ne doit voir que des blobs opaques.
+Important: encrypt sensitive data BEFORE archiving it — the storage
+network must only ever see opaque blobs.
 """
 
 import base64
@@ -37,12 +37,12 @@ def _request(method: str, path: str, body: dict | None = None) -> dict:
             return json.loads(resp.read())
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode(errors="replace")
-        sys.exit(f"Erreur {exc.code} sur {path}: {detail}")
+        sys.exit(f"Error {exc.code} on {path}: {detail}")
 
 
 def main(argv: list[str]) -> int:
     if not ADMIN_TOKEN:
-        sys.exit("COORDINATOR_ADMIN_TOKEN manquant (voir les logs de démarrage du coordinateur)")
+        sys.exit("COORDINATOR_ADMIN_TOKEN missing (see the coordinator's startup logs)")
     if len(argv) == 4 and argv[1] == "put":
         with open(argv[3], "rb") as fh:
             data = fh.read()
@@ -51,13 +51,13 @@ def main(argv: list[str]) -> int:
             "/api/admin/storage/archive",
             {"key": argv[2], "data_b64": base64.b64encode(data).decode()},
         )
-        print(f"Archivé: {out['key']} ({out['bytes']} octets, {out['chunks']} chunk(s))")
+        print(f"Archived: {out['key']} ({out['bytes']} bytes, {out['chunks']} chunk(s))")
         return 0
     if len(argv) == 4 and argv[1] == "get":
         out = _request("GET", f"/api/admin/storage/retrieve/{urllib.parse.quote(argv[2], safe='')}")
         with open(argv[3], "wb") as fh:
             fh.write(base64.b64decode(out["data_b64"]))
-        print(f"Restauré: {argv[2]} -> {argv[3]}")
+        print(f"Restored: {argv[2]} -> {argv[3]}")
         return 0
     print(__doc__, file=sys.stderr)
     return 2

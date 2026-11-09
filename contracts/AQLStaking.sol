@@ -3,22 +3,22 @@ pragma solidity 0.8.26;
 
 import "./SafeToken.sol";
 
-/// @title AQLStaking — les détenteurs d'AQL reçoivent 33 % des paiements
-/// @notice Chaque paiement d'un utilisateur (en USDT) envoie 33 % ici. Ces
-///         revenus ne sont pas versés d'un coup : ils s'écoulent seconde par
-///         seconde sur STREAM_DURATION (7 jours). Conséquence : staker juste
-///         avant un gros paiement puis retirer juste après ne rapporte
-///         presque rien — la part de chacun est proportionnelle au temps
-///         réellement passé staké, multiplié par son poids.
+/// @title AQLStaking — AQL holders receive 33% of payments
+/// @notice Every user payment (in USDT) sends 33% here. This revenue
+///         is not paid out all at once: it streams second by
+///         second over STREAM_DURATION (7 days). As a result, staking right
+///         before a large payment and withdrawing right after earns
+///         almost nothing — each staker's share is proportional to the time
+///         actually spent staked, multiplied by their weight.
 ///
-///         Le poids dépend du verrouillage choisi ("plus on garde, plus ça monte") :
-///           palier 0 : sans verrou — ×1,00
-///           palier 1 : 90 jours   — ×1,25
-///           palier 2 : 180 jours  — ×1,50
-///           palier 3 : 365 jours  — ×2,00
+///         The weight depends on the chosen lock ("the longer you hold, the more you earn"):
+///           tier 0: no lock    — ×1.00
+///           tier 1: 90 days    — ×1.25
+///           tier 2: 180 days   — ×1.50
+///           tier 3: 365 days   — ×2.00
 ///
-///         Aucun administrateur. Le déployeur désigne une seule fois le contrat
-///         AQLNetwork, seul autorisé à annoncer de nouveaux revenus.
+///         No administrator. The deployer designates, once only, the
+///         AQLNetwork contract, the only one allowed to announce new revenue.
 contract AQLStaking {
     using SafeToken for IERC20Min;
 
@@ -29,8 +29,8 @@ contract AQLStaking {
 
     uint256 public constant STREAM_DURATION = 7 days;
     uint256 private constant BPS = 10_000;
-    // rewardRate est exprimé en USDT * RATE_SCALE par seconde ; l'accumulateur
-    // en USDT * RATE_SCALE * ACC_SCALE par unité de poids.
+    // rewardRate is expressed in USDT * RATE_SCALE per second; the accumulator
+    // in USDT * RATE_SCALE * ACC_SCALE per unit of weight.
     uint256 private constant RATE_SCALE = 1e18;
     uint256 private constant ACC_SCALE = 1e18;
 
@@ -42,13 +42,13 @@ contract AQLStaking {
     mapping(address => uint8) public tierOf;
     mapping(address => uint64) public unlockAt;
 
-    // --- écoulement des revenus ---
+    // --- revenue streaming ---
     uint256 public rewardRate;
     uint256 public periodFinish;
     uint256 public lastUpdateTime;
     uint256 public accRewardPerWeight;
-    /// Revenus écoulés pendant qu'aucun poids n'était staké : remis en
-    /// circulation à l'annonce suivante au lieu d'être perdus.
+    /// Revenue streamed while no weight was staked: put back into
+    /// circulation at the next announcement instead of being lost.
     uint256 public queuedScaled;
     mapping(address => uint256) private _accPaid;
     mapping(address => uint256) public owed;
@@ -79,7 +79,7 @@ contract AQLStaking {
         _deployer = msg.sender;
     }
 
-    /// @notice Désigne AQLNetwork, une seule fois, de façon irréversible.
+    /// @notice Designates AQLNetwork, once and irreversibly.
     function initNetwork(address network_) external {
         require(msg.sender == _deployer, "AQLS: not deployer");
         require(network == address(0), "AQLS: network already set");
@@ -88,7 +88,7 @@ contract AQLStaking {
         emit NetworkSet(network_);
     }
 
-    // ------------------------------------------------------------ paliers
+    // ------------------------------------------------------------ tiers
 
     function tierMultiplierBps(uint8 tier) public pure returns (uint256) {
         if (tier == 0) return 10_000;
@@ -106,7 +106,7 @@ contract AQLStaking {
         revert("AQLS: bad tier");
     }
 
-    // ------------------------------------------------------------ comptabilité
+    // ------------------------------------------------------------ accounting
 
     function _lastApplicable() private view returns (uint256) {
         return block.timestamp < periodFinish ? block.timestamp : periodFinish;
@@ -173,12 +173,12 @@ contract AQLStaking {
         emit Unstaked(msg.sender, amount);
     }
 
-    // ------------------------------------------------------------ revenus
+    // ------------------------------------------------------------ revenue
 
-    /// @notice Intègre tout USDT arrivé depuis la dernière annonce et l'étale
-    ///         sur les 7 prochains jours, avec le reliquat non encore écoulé.
-    ///         La quantité reçue est mesurée sur le solde réel du contrat :
-    ///         aucun montant déclaré n'est cru sur parole.
+    /// @notice Takes in all USDT that arrived since the last announcement and spreads
+    ///         it over the next 7 days, together with the remainder not yet streamed.
+    ///         The amount received is measured from the contract's actual balance:
+    ///         no declared amount is taken on trust.
     function notifyRevenue() external nonReentrant {
         require(msg.sender == network, "AQLS: not network");
         _update(address(0));
@@ -208,7 +208,7 @@ contract AQLStaking {
         emit RevenueClaimed(msg.sender, amount);
     }
 
-    /// @notice USDT réclamable maintenant par `account` (crédité + écoulé depuis).
+    /// @notice USDT claimable now by `account` (credited + streamed since).
     function pendingRevenue(address account) external view returns (uint256) {
         uint256 acc = accRewardPerWeight;
         uint256 applicable = _lastApplicable();

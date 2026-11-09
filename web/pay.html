@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ajouter du crédit — AQL Network</title>
+<title>Add credit — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,25 +17,25 @@
 <main>
   <div class="container">
     <section>
-      <span class="kicker page-kicker">Produit</span>
-      <h1 class="page-title">Ajouter du crédit</h1>
-      <p class="section-sub">Le crédit est en USDT et se consomme au token, au prix du moment.
-        Le paiement va directement au contrat du réseau : 67 % aux mineurs, 33 % aux détenteurs
-        d'AQL. Aucun intermédiaire ne détient votre argent.</p>
+      <span class="kicker page-kicker">Product</span>
+      <h1 class="page-title">Add credit</h1>
+      <p class="section-sub">Credit is in USDT and is spent per token, at the current price.
+        Payment goes straight to the network contract: 67% to miners, 33% to AQL stakers.
+        No middleman ever holds your money.</p>
 
       <div class="grid c3" id="plans"></div>
 
       <div class="card" style="margin-top:18px;">
-        <label for="amount">Montant (USDT)</label>
+        <label for="amount">Amount (USDT)</label>
         <input type="number" id="amount" min="1" step="1" value="20">
-        <label for="ref">Référence de votre compte IA</label>
-        <input type="text" id="ref" class="mono" placeholder="0x… (créée sur la page « Utiliser l'IA »)">
-        <p class="muted" style="font-size:0.85rem;">Le crédit arrive automatiquement sur le compte qui
-          porte cette référence, quelques blocs après le paiement. Vérifiez-la : un paiement vers une
-          mauvaise référence ne peut pas être annulé.</p>
+        <label for="ref">Your AI account reference</label>
+        <input type="text" id="ref" class="mono" placeholder="0x… (created on the &quot;Use the AI&quot; page)">
+        <p class="muted" style="font-size:0.85rem;">The credit lands automatically on the account with
+          this reference, a few blocks after payment. Double-check it: a payment to the wrong
+          reference cannot be reversed.</p>
         <p class="row" style="margin-top:12px;">
-          <button class="btn primary" id="btn-pay">Payer avec mon wallet</button>
-          <a class="btn" id="btn-onramp" target="_blank" rel="noopener" style="display:none;">Acheter des USDT par carte</a>
+          <button class="btn primary" id="btn-pay">Pay with my wallet</button>
+          <a class="btn" id="btn-onramp" target="_blank" rel="noopener" style="display:none;">Buy USDT by card</a>
         </p>
         <div id="pay-status" class="banner info" style="display:none;"></div>
       </div>

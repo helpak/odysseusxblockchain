@@ -1,10 +1,10 @@
-"""Benchmark public toutes les BENCH_INTERVAL_SECONDS (2 h par défaut).
+"""Public benchmark every BENCH_INTERVAL_SECONDS (2 h by default).
 
-Une même série de tâches (graine publiée) est posée :
-  - au réseau AQL, via la file de service normale (avec le prompt du réseau) ;
-  - à chaque modèle de référence configuré (API compatible OpenAI).
-Le coordinateur corrige toutes les réponses de la même façon : la comparaison
-porte sur le MÊME test, pas sur des scores publiés ailleurs.
+The same task series (published seed) is given:
+  - to the AQL network, through the normal serving queue (with the network prompt);
+  - to every configured reference model (OpenAI-compatible API).
+The coordinator grades all answers the same way: the comparison is on the
+SAME test, not on scores published elsewhere.
 """
 
 from __future__ import annotations
@@ -54,8 +54,8 @@ def _run_network(series: list[dict]) -> tuple[int | None, str]:
             missing += 1
         serving.forget(rid)
     if missing == len(series):
-        return None, "aucun mineur n'a répondu dans le délai"
-    note = f"{missing} tâche(s) sans réponse" if missing else ""
+        return None, "no miner answered in time"
+    note = f"{missing} task(s) unanswered" if missing else ""
     return tasks.score(series, answers), note
 
 
@@ -77,7 +77,7 @@ def _call_reference(ref: dict, prompt: str) -> str:
 
 def run_once() -> str:
     if not _running.acquire(blocking=False):
-        return "déjà en cours"
+        return "already running"
     try:
         run_id = secrets.token_hex(6)
         seed = int(time.time())
@@ -95,7 +95,7 @@ def run_once() -> str:
                 for t in series:
                     answers[str(t["id"])] = _call_reference(ref, t["prompt"])
                 ref_correct = tasks.score(series, answers)
-            except Exception as exc:  # référence indisponible : on l'enregistre sans score
+            except Exception as exc:  # reference unavailable: recorded without a score
                 ref_correct, error = None, str(exc)
             _store(run_id, int(t0), seed, ref["name"], ref["model"], ref_correct, len(series),
                    int(time.time() - t0), error)
@@ -130,7 +130,7 @@ def start_background() -> None:
         return
 
     def loop():
-        time.sleep(60)  # laisse les mineurs se connecter après un redémarrage
+        time.sleep(60)  # give miners time to connect after a restart
         while True:
             try:
                 run_once()

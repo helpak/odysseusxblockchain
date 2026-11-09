@@ -12,32 +12,32 @@ interface IAQLStaking {
     function notifyRevenue() external;
 }
 
-/// @title AQLNetwork — émission, paiements et récompenses du réseau AQL
-/// @notice Trois rôles, sans aucun administrateur :
+/// @title AQLNetwork — emission, payments and rewards of the AQL network
+/// @notice Three roles, with no administrator at all:
 ///
-///   1. ÉMISSION (comme Bitcoin) — 1 époque = 1 jour à partir de `genesis`.
-///      Chaque époque peut créer au plus epochReward(e) AQL, divisé par 2
-///      toutes les 730 époques (~2 ans). Une époque ne peut être réglée
-///      qu'une fois terminée : le calendrier est garanti par l'horloge de la
-///      chaîne, pas par un opérateur. L'émission non attribuée n'est jamais
-///      créée.
+///   1. EMISSION (like Bitcoin) — 1 epoch = 1 day starting from `genesis`.
+///      Each epoch can create at most epochReward(e) AQL, halved every
+///      730 epochs (~2 years). An epoch can only be settled once it has
+///      ended: the schedule is enforced by the chain's clock, not by an
+///      operator. Emission that is not allocated to anyone is never
+///      created.
 ///
-///   2. PAIEMENTS — un utilisateur paie en USDT via pay(). Le montant
-///      réellement reçu est réparti à la seconde : 67 % au pool des mineurs,
-///      33 % aux stakers d'AQL (contrat AQLStaking).
+///   2. PAYMENTS — a user pays in USDT via pay(). The amount actually
+///      received is split immediately: 67% to the miner pool,
+///      33% to AQL stakers (AQLStaking contract).
 ///
-///   3. RÉCOMPENSES — pour chaque époque terminée, les oracles publient la
-///      racine merkle des gains vérifiés (AQL émis + USDT du pool mineurs).
-///      Il faut `threshold` oracles d'accord sur exactement les mêmes
-///      valeurs. Chaque époque est plafonnée : impossible de réclamer plus
-///      que ce que l'époque a déclaré, impossible de déclarer plus que la
-///      récompense d'époque ou que le pool mineurs disponible.
+///   3. REWARDS — for each finished epoch, the oracles publish the merkle
+///      root of verified earnings (AQL emitted + USDT from the miner pool).
+///      `threshold` oracles must agree on exactly the same values.
+///      Each epoch is capped: it is impossible to claim more than
+///      the epoch declared, and impossible to declare more than the
+///      epoch reward or the available miner pool.
 ///
-///   Les oracles peuvent remplacer l'un des leurs, au même seuil de vote
-///   (clé perdue ou compromise). Rien d'autre n'est modifiable.
+///   The oracles can replace one of their own, at the same voting threshold
+///   (lost or compromised key). Nothing else can be changed.
 ///
-///   Merkle en sha256 (et non keccak256) : le coordinateur reproduit arbres et
-///   preuves en Python standard (hashlib), sans dépendance.
+///   Merkle trees use sha256 (not keccak256): the coordinator rebuilds trees and
+///   proofs in standard Python (hashlib), with no dependencies.
 contract AQLNetwork {
     using SafeToken for IERC20Min;
 
@@ -48,31 +48,31 @@ contract AQLNetwork {
     uint256 public immutable threshold;
 
     uint256 public constant EPOCH_SECONDS = 1 days;
-    uint256 public constant HALVING_INTERVAL = 730; // époques (~2 ans)
-    /// 1e27 / 1460, arrondi par défaut : l'émission totale converge vers
-    /// 1 milliard d'AQL sans jamais l'atteindre.
+    uint256 public constant HALVING_INTERVAL = 730; // epochs (~2 years)
+    /// 1e27 / 1460, rounded down: total emission converges towards
+    /// 1 billion AQL without ever reaching it.
     uint256 public constant INITIAL_EPOCH_REWARD = 684931506849315068493150;
-    uint256 public constant MINER_BPS = 6_700; // 67 % mineurs, 33 % stakers
+    uint256 public constant MINER_BPS = 6_700; // 67% miners, 33% stakers
     uint256 private constant BPS = 10_000;
 
     // --- oracles ---
     mapping(address => bool) public isOracle;
     uint256 public oracleCount;
-    /// Incrémenté à chaque remplacement d'oracle : invalide tous les votes en cours.
+    /// Incremented on every oracle replacement: invalidates all pending votes.
     uint256 public oracleNonce;
     mapping(bytes32 => uint256) public votes;
     mapping(bytes32 => mapping(address => bool)) public hasVoted;
 
-    // --- époques ---
+    // --- epochs ---
     mapping(uint256 => bytes32) public epochRoot;
     mapping(uint256 => uint256) public aqlRemaining;
     mapping(uint256 => uint256) public usdtRemaining;
     mapping(uint256 => mapping(uint256 => uint256)) private _claimedBitMap;
 
-    // --- revenus ---
-    /// USDT destiné aux mineurs, reçu mais pas encore attribué à une époque.
+    // --- revenue ---
+    /// USDT intended for miners, received but not yet allocated to an epoch.
     uint256 public minerPool;
-    /// Total USDT reçu des utilisateurs depuis le lancement.
+    /// Total USDT received from users since launch.
     uint256 public totalPaid;
 
     uint256 private _entered = 1;
@@ -112,8 +112,8 @@ contract AQLNetwork {
         require(address(usdt_).code.length > 0, "AQLN: usdt not a contract");
         require(staking_.code.length > 0, "AQLN: staking not a contract");
         require(threshold_ > 0 && threshold_ <= oracles_.length, "AQLN: bad threshold");
-        // Majorité stricte : deux groupes disjoints d'oracles ne peuvent jamais
-        // atteindre le seuil chacun de leur côté.
+        // Strict majority: two disjoint groups of oracles can never each
+        // reach the threshold on their own.
         require(threshold_ * 2 > oracles_.length, "AQLN: threshold must be a majority");
         for (uint256 i = 0; i < oracles_.length; i++) {
             address o = oracles_[i];
@@ -129,30 +129,30 @@ contract AQLNetwork {
         oracleCount = oracles_.length;
     }
 
-    // ------------------------------------------------------------ émission
+    // ------------------------------------------------------------ emission
 
-    /// @notice Nombre d'époques entièrement écoulées : seules elles sont réglables.
+    /// @notice Number of fully elapsed epochs: only these can be settled.
     function finishedEpochs() public view returns (uint256) {
         if (block.timestamp < genesis) return 0;
         return (block.timestamp - genesis) / EPOCH_SECONDS;
     }
 
-    /// @notice AQL maximum créable pour une époque (halving tous les 730 jours).
+    /// @notice Maximum AQL that can be created for an epoch (halving every 730 days).
     function epochReward(uint256 epochId) public pure returns (uint256) {
         uint256 halvings = epochId / HALVING_INTERVAL;
         if (halvings >= 64) return 0;
         return INITIAL_EPOCH_REWARD >> halvings;
     }
 
-    // ------------------------------------------------------------ paiements
+    // ------------------------------------------------------------ payments
 
-    /// @notice Paiement d'un utilisateur. `accountRef` identifie le compte IA à
-    ///         créditer (hash d'identifiant), lu par le service via l'événement Paid.
+    /// @notice Payment from a user. `accountRef` identifies the AI account to
+    ///         credit (identifier hash), read by the service from the Paid event.
     function pay(uint256 amount, bytes32 accountRef) external nonReentrant {
         require(amount > 0, "AQLN: zero amount");
         uint256 before = usdt.balanceOf(address(this));
         usdt.safeTransferFrom(msg.sender, address(this), amount);
-        // Montant réellement reçu : robuste à un éventuel frais de transfert USDT.
+        // Amount actually received: robust to a possible USDT transfer fee.
         uint256 received = usdt.balanceOf(address(this)) - before;
         require(received > 0, "AQLN: nothing received");
 
@@ -166,7 +166,7 @@ contract AQLNetwork {
         emit Paid(msg.sender, accountRef, received, minerCut, holderCut);
     }
 
-    // ------------------------------------------------------------ époques
+    // ------------------------------------------------------------ epochs
 
     function proposeEpoch(uint256 epochId, bytes32 root, uint256 aqlTotal, uint256 usdtTotal)
         external
@@ -210,9 +210,9 @@ contract AQLNetwork {
         bytes32[] proof;
     }
 
-    /// @notice Réclame les gains d'une époque. N'importe qui peut payer le gas :
-    ///         les fonds vont toujours à `account`.
-    /// Feuille : sha256(abi.encodePacked(epochId, index, account, aqlAmount, usdtAmount)).
+    /// @notice Claims the earnings of an epoch. Anyone can pay the gas:
+    ///         the funds always go to `account`.
+    /// Leaf: sha256(abi.encodePacked(epochId, index, account, aqlAmount, usdtAmount)).
     function claim(
         uint256 epochId,
         uint256 index,
@@ -225,8 +225,8 @@ contract AQLNetwork {
         _payout(account, aqlAmount, usdtAmount);
     }
 
-    /// @notice Réclame plusieurs époques en une seule transaction (frais réduits
-    ///         sur Ethereum) : un seul transfert AQL et un seul transfert USDT.
+    /// @notice Claims several epochs in a single transaction (lower fees
+    ///         on Ethereum): a single AQL transfer and a single USDT transfer.
     function claimMany(address account, ClaimItem[] calldata items) external nonReentrant {
         uint256 aqlTotal;
         uint256 usdtTotal;
@@ -283,7 +283,7 @@ contract AQLNetwork {
 
     // ------------------------------------------------------------ oracles
 
-    /// @notice Remplace un oracle (clé perdue/compromise), au même seuil de vote.
+    /// @notice Replaces an oracle (lost/compromised key), at the same voting threshold.
     function voteReplaceOracle(address oldOracle, address newOracle) external onlyOracle {
         require(isOracle[oldOracle], "AQLN: not an oracle");
         require(newOracle != address(0) && !isOracle[newOracle], "AQLN: bad new oracle");

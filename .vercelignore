@@ -1,6 +1,6 @@
-# Vercel ne publie que le site statique (web/). Le coordinateur, l'IA et les
-# contrats tournent ailleurs (serveur, chaîne) : on ne les envoie pas, ce qui
-# évite aussi toute détection automatique de framework Python.
+# Vercel only publishes the static website (web/). The coordinator, the AI and the
+# contracts run elsewhere (server, chain): they are not uploaded, which also
+# prevents any automatic detection of a Python framework.
 /*
 !/web
 !/vercel.json

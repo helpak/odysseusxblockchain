@@ -1,97 +1,97 @@
-# Architecture du réseau AQL
+# AQL Network architecture
 
 ```
- utilisateur ── site (Vercel) ── /v1/chat/completions ──▶ coordinateur ──▶ file de requêtes
+    user ────── site (Vercel) ── /v1/chat/completions ──▶ coordinator ──▶ request queue
       │                                                        │                │
-      │ USDT : AQLNetwork.pay(montant, réf. compte)            │                ▼
-      ▼                                                        │        mineurs GPU (modèle du réseau)
+      │ USDT: AQLNetwork.pay(amount, account ref.)             │                ▼
+      ▼                                                        │        GPU miners (network model)
  ┌──────────────── Ethereum ─────────────────┐                 │        serve · verify · measure · improve
- │ AQLNetwork  67 % pool mineurs ─┐          │◀─ événements ───┘                │
- │             33 % ──▶ AQLStaking (stakers) │   Paid lus,                      ▼
- │ époques : racines merkle votées par       │   comptes crédités      points de travail vérifié
- │ ≥ 3 oracles sur 5 → AQL émis + USDT       │◀─ oracle-daemons ◀── règlement quotidien (merkle)
- │ claimMany : mineurs réclament leurs gains │
+ │ AQLNetwork  67% miner pool ────┐          │◀─ events ───────┘                │
+ │             33% ──▶ AQLStaking (stakers)  │   Paid read,                     ▼
+ │ epochs: merkle roots voted by             │   accounts credited     verified work points
+ │ ≥ 3 of 5 oracles → AQL minted + USDT      │◀─ oracle-daemons ◀── daily settlement (merkle)
+ │ claimMany: miners claim their earnings    │
  └───────────────────────────────────────────┘
 ```
 
-## Les briques
+## The building blocks
 
-| Dossier | Rôle |
+| Folder | Role |
 |---|---|
-| `contracts/` | **AQLToken** (1 Md, sans premine, sans admin), **AQLNetwork** (émission avec halving liée au temps, paiements 67/33, époques votées par les oracles avec plafonds, `claim`/`claimMany`), **AQLStaking** (revenus écoulés sur 7 jours, paliers ×1 → ×2). |
-| `network/coordinator/` | API compatible OpenAI, comptes et crédits, prix automatique, file de service, contrôle aléatoire avec arbitrage, réputation, auto-amélioration mesurée, benchmark toutes les 2 h, règlement des époques. |
-| `network/miner/` | `aql_miner.py` : un fichier, zéro dépendance. Calcul (avec un serveur de modèle local) ou stockage. |
-| `contracts/scripts/oracle-daemon.js` | Un daemon par oracle : fait régler chaque époque terminée et vote sa racine on-chain. |
-| `web/` | Site statique (Vercel) : accueil, IA, tarifs, puissance et benchmark, minage, compte. |
-| `ai/` | Espace de travail Odysseus (optionnel), branchable sur le réseau comme fournisseur compatible OpenAI. |
+| `contracts/` | **AQLToken** (1 billion, no premine, no admin), **AQLNetwork** (time-based halving emission, 67/33 payments, oracle-voted epochs with caps, `claim`/`claimMany`), **AQLStaking** (revenue streamed over 7 days, tiers ×1 → ×2). |
+| `network/coordinator/` | OpenAI-compatible API, accounts and credits, automatic pricing, serving queue, random checks with arbitration, reputation, measured self-improvement, benchmark every 2 h, epoch settlement. |
+| `network/miner/` | `aql_miner.py`: one file, zero dependencies. Compute (with a local model server) or storage. |
+| `contracts/scripts/oracle-daemon.js` | One daemon per oracle: gets each finished epoch settled and votes its root on-chain. |
+| `web/` | Static site (Vercel): home, Use the AI, Pricing, Network (power and benchmark), Mine, My account. |
+| `ai/` | Odysseus workspace (optional), which can be plugged into the network as an OpenAI-compatible provider. |
 
-## Le parcours d'une requête
+## The path of a request
 
-1. L'utilisateur crée un compte sur le site. Il obtient une clé `aql_…` et
-   une référence de paiement de 32 octets.
-2. Il paie en USDT : `AQLNetwork.pay(montant, référence)`. Le contrat envoie
-   67 % au pool des mineurs et 33 % aux stakers. Le coordinateur lit
-   l'événement `Paid` après N confirmations et crédite le compte.
-3. Il envoie un message. Le coordinateur réserve le coût maximal, ajoute le
-   prompt système du réseau, puis place la requête dans la file.
-4. Un mineur en attente reçoit la requête, interroge son modèle local et
-   renvoie la réponse.
-5. Le coordinateur estime les tokens lui-même (≈ 4 caractères par token) et
-   débite le compte au prix de l'époque. Le mineur gagne 1 point par token.
-6. 5 % des requêtes, tirées au hasard, passent à température 0 et sont
-   rejouées par un autre wallet. En cas d'écart, un troisième wallet
-   départage : celui qui s'écarte perd 3 points de réputation et les gains de
-   cette réponse.
+1. The user creates an account on the site. They get an `aql_…` key and
+   a 32-byte payment reference.
+2. They pay in USDT: `AQLNetwork.pay(amount, reference)`. The contract sends
+   67% to the miner pool and 33% to the stakers. The coordinator reads
+   the `Paid` event after N confirmations and credits the account.
+3. They send a message. The coordinator reserves the maximum cost, adds the
+   network's system prompt, then places the request in the queue.
+4. A waiting miner receives the request, queries its local model and
+   returns the response.
+5. The coordinator estimates the tokens itself (≈ 4 characters per token) and
+   debits the account at the epoch's price. The miner earns 1 point per token.
+6. 5% of requests, drawn at random, are run at temperature 0 and
+   replayed by another wallet. If the answers differ, a third wallet
+   breaks the tie: the one that deviates loses 3 reputation points and the
+   earnings for that response.
 
-## Le prix, sans intervention humaine
+## Pricing, without human intervention
 
-- **Prix de l'IA** : à chaque époque, le prix par million de tokens suit la
-  charge mesurée. La charge, ce sont les requêtes attribuées rapportées à la
-  capacité restée inutilisée. Le prix bouge de ±12,5 % au plus, dans des
-  bornes fixes.
-- **Prix de l'AQL** : il est fixé par le marché, dans un pool Uniswap AQL/USDT
-  que n'importe qui peut créer. Le protocole ne fixe aucun prix ; le site lit
-  les réserves du pool.
+- **AI price**: each epoch, the price per million tokens follows the
+  measured load. The load is the requests assigned relative to the
+  capacity that stayed unused. The price moves by at most ±12.5%, within
+  fixed bounds.
+- **AQL price**: it is set by the market, in a Uniswap AQL/USDT pool
+  that anyone can create. The protocol sets no price; the site reads
+  the pool's reserves.
 
-## L'auto-amélioration
+## Self-improvement
 
-1. Un nœud améliorateur propose un nouveau prompt système.
-2. Deux mesureurs, sur des wallets différents de celui de l'auteur, répondent
-   à 12 tâches générées. Les tâches sont nouvelles à chaque mesure, donc
-   impossibles à apprendre par cœur. Chaque mesureur répond une fois avec le
-   prompt actuel et une fois avec le candidat.
-3. Le coordinateur corrige les réponses lui-même. Si les deux mesureurs
-   constatent au moins 2 bonnes réponses de plus, le candidat est promu : il
-   s'applique alors à toutes les requêtes et son auteur reçoit un bonus.
-4. Si les deux mesures se contredisent, une troisième départage.
+1. An improver node proposes a new system prompt.
+2. Two measurers, on wallets different from the author's, answer
+   12 generated tasks. The tasks are new for each measurement, so they
+   cannot be memorized. Each measurer answers once with the
+   current prompt and once with the candidate.
+3. The coordinator grades the answers itself. If both measurers
+   find at least 2 more correct answers, the candidate is promoted: it
+   then applies to all requests and its author receives a bonus.
+4. If the two measurements contradict each other, a third one breaks the tie.
 
-## Le benchmark public (toutes les 2 heures)
+## The public benchmark (every 2 hours)
 
-La même série de tâches, générée à partir d'une graine publique, est posée au
-réseau et aux modèles de référence configurés. Le correcteur est le même pour
-tous. Seuls les scores réellement mesurés sont affichés.
+The same set of tasks, generated from a public seed, is given to the
+network and to the configured reference models. The grader is the same for
+all of them. Only scores that were actually measured are displayed.
 
-## Le cycle d'une époque (1 jour)
+## The cycle of an epoch (1 day)
 
-1. **Travail** : servir, contrôler, mesurer, améliorer et stocker rapportent
-   des points vérifiés.
-2. **Règlement** : la récompense AQL de l'époque (avec halving) est répartie
-   à 70 % pour le calcul et 30 % pour le stockage, au prorata des points. Le
-   pool USDT des mineurs, lu on-chain, est partagé entre le seul service
-   payant et ses contrôles. Un arbre merkle sha256 regroupe tous les gains.
-3. **Vote** : chaque oracle vote la racine. Il faut au moins 3 votes sur 5,
-   et le contrat refuse une époque non terminée, une émission au-dessus de la
-   récompense, ou plus d'USDT que le pool n'en contient.
-4. **Claim** : chaque mineur réclame ses AQL et ses USDT, plusieurs époques en
-   une transaction.
+1. **Work**: serving, checking, measuring, improving and storing earn
+   verified points.
+2. **Settlement**: the epoch's AQL reward (with halving) is split
+   70% for compute and 30% for storage, pro rata to points. The
+   miners' USDT pool, read on-chain, is shared only between paid
+   serving and its checks. A sha256 merkle tree groups all earnings.
+3. **Vote**: each oracle votes on the root. At least 3 votes out of 5 are required,
+   and the contract rejects an unfinished epoch, an emission above the
+   reward, or more USDT than the pool holds.
+4. **Claim**: each miner claims their AQL and USDT, several epochs in
+   one transaction.
 
-## Points de confiance de la v1 (et suite)
+## Trust points in v1 (and what comes next)
 
-| v1 | Suite |
+| v1 | Next |
 |---|---|
-| Un coordinateur, au code ouvert, aux règlements publics et revérifiables | Plusieurs coordinateurs ; chaque oracle recalcule les gains indépendamment |
-| Contrôle des réponses par échantillonnage et réputation | Plus d'échantillons, à mesure que la puissance du réseau le permet |
-| Amélioration par prompts système | Améliorations de poids (LoRA), avec le même protocole de mesure |
-| Le mineur qui sert une requête la voit en clair (affiché à l'utilisateur) | Inférence confidentielle, quand ce sera praticable |
+| One coordinator, with open code and public, re-verifiable settlements | Several coordinators; each oracle recomputes earnings independently |
+| Response checking by sampling and reputation | More samples, as the network's power allows |
+| Improvement through system prompts | Weight improvements (LoRA), with the same measurement protocol |
+| The miner that serves a request sees it in plain text (shown to the user) | Confidential inference, once it becomes practical |
 
-Le détail de chaque choix est dans [DECISIONS.md](DECISIONS.md).
+The details of each choice are in [DECISIONS.md](DECISIONS.md).

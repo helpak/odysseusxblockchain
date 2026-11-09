@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Compile tous les .sol de contracts/ avec solc-js et écrit les artefacts
-// (ABI + bytecode) dans contracts/build/<Nom>.json.
+// Compiles every .sol file in contracts/ with solc-js and writes the artifacts
+// (ABI + bytecode) to contracts/build/<Name>.json.
 "use strict";
 
 const fs = require("fs");
@@ -22,8 +22,8 @@ const input = {
   sources,
   settings: {
     optimizer: { enabled: true, runs: 200 },
-    // "paris" : pas de PUSH0/MCOPY — déployable sur toutes les chaînes EVM,
-    // y compris les L2 et outils qui ne supportent pas encore shanghai/cancun.
+    // "paris": no PUSH0/MCOPY — deployable on every EVM chain,
+    // including L2s and tools that do not support shanghai/cancun yet.
     evmVersion: "paris",
     outputSelection: { "*": { "*": ["abi", "evm.bytecode.object"] } },
   },
@@ -42,14 +42,14 @@ for (const err of output.errors || []) {
   }
 }
 if (failed) {
-  console.error("Échec de compilation.");
+  console.error("Compilation failed.");
   process.exit(1);
 }
 
 fs.mkdirSync(BUILD, { recursive: true });
 for (const [file, contracts] of Object.entries(output.contracts || {})) {
   for (const [name, data] of Object.entries(contracts)) {
-    if (!data.evm.bytecode.object) continue; // interfaces : pas d'artefact
+    if (!data.evm.bytecode.object) continue; // interfaces: no artifact
     const artifact = {
       contractName: name,
       sourceFile: file,
@@ -60,4 +60,4 @@ for (const [file, contracts] of Object.entries(output.contracts || {})) {
     console.log(`compiled: ${name}  (${file})`);
   }
 }
-console.log(`Artefacts écrits dans ${BUILD}`);
+console.log(`Artifacts written to ${BUILD}`);

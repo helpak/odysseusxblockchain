@@ -1,20 +1,20 @@
-"""Arbre merkle sha256 à paires triées — miroir exact de AQLNetwork.sol.
+"""Sorted-pair sha256 merkle tree — exact mirror of AQLNetwork.sol.
 
-Feuille  : sha256(abi.encodePacked(uint256 epochId, uint256 index, address account,
-                                   uint256 aqlAmount, uint256 usdtAmount))   — 148 octets
-Nœud     : sha256(min(a, b) || max(a, b))
-Impair   : le dernier nœud d'un niveau impair est promu tel quel au niveau supérieur.
+Leaf     : sha256(abi.encodePacked(uint256 epochId, uint256 index, address account,
+                                   uint256 aqlAmount, uint256 usdtAmount))   — 148 bytes
+Node     : sha256(min(a, b) || max(a, b))
+Odd      : the last node of an odd-sized level is promoted as is to the level above.
 
-Chaque gain d'époque porte deux montants : l'AQL émis (en wei, 18 décimales)
-et l'USDT du pool mineurs (en unités de base, 6 décimales).
+Each epoch payout carries two amounts: the AQL emitted (in wei, 18 decimals)
+and the USDT from the miner pool (in base units, 6 decimals).
 
-sha256 (et non keccak256) a été choisi volontairement : il est disponible côté
-contrat (précompilé EVM) ET dans hashlib en Python standard, donc le
-coordinateur n'a besoin d'aucune dépendance crypto externe.
+sha256 (rather than keccak256) was chosen on purpose: it is available on the
+contract side (EVM precompile) AND in hashlib in standard Python, so the
+coordinator needs no external crypto dependency.
 
-Utilisable en module (build_payout_tree) ou en CLI :
+Usable as a module (build_payout_tree) or as a CLI:
     python3 merkle.py build <epoch_id> <payouts.json>
-où payouts.json = [{"account": "0x…", "aql": "<wei>", "usdt": "<unités>"}, …]
+where payouts.json = [{"account": "0x…", "aql": "<wei>", "usdt": "<units>"}, …]
 """
 
 from __future__ import annotations
@@ -30,14 +30,14 @@ _ADDRESS_RE = re.compile(r"^0x[0-9a-fA-F]{40}$")
 def normalize_address(account: str) -> str:
     account = account.strip()
     if not _ADDRESS_RE.match(account):
-        raise ValueError(f"adresse invalide: {account!r}")
+        raise ValueError(f"invalid address: {account!r}")
     return account.lower()
 
 
 def leaf_hash(epoch_id: int, index: int, account: str, aql_amount: int, usdt_amount: int) -> bytes:
     """sha256(abi.encodePacked(uint256, uint256, address, uint256, uint256))."""
     if min(epoch_id, index, aql_amount, usdt_amount) < 0:
-        raise ValueError("epoch_id, index et montants doivent être >= 0")
+        raise ValueError("epoch_id, index and amounts must be >= 0")
     account_bytes = bytes.fromhex(normalize_address(account)[2:])
     packed = (
         epoch_id.to_bytes(32, "big")
@@ -50,14 +50,14 @@ def leaf_hash(epoch_id: int, index: int, account: str, aql_amount: int, usdt_amo
 
 
 def pair_hash(a: bytes, b: bytes) -> bytes:
-    """Hachage de paire triée, identique à AQLNetwork._verify."""
+    """Sorted-pair hash, identical to AQLNetwork._verify."""
     return hashlib.sha256(a + b if a <= b else b + a).digest()
 
 
 def build_levels(leaves: list[bytes]) -> list[list[bytes]]:
-    """Niveau 0 = feuilles ; dernier niveau = [racine]."""
+    """Level 0 = leaves; last level = [root]."""
     if not leaves:
-        raise ValueError("aucune feuille")
+        raise ValueError("no leaves")
     levels = [list(leaves)]
     while len(levels[-1]) > 1:
         current = levels[-1]
@@ -65,7 +65,7 @@ def build_levels(leaves: list[bytes]) -> list[list[bytes]]:
         for i in range(0, len(current) - 1, 2):
             nxt.append(pair_hash(current[i], current[i + 1]))
         if len(current) % 2 == 1:
-            nxt.append(current[-1])  # nœud impair promu sans frère
+            nxt.append(current[-1])  # odd node promoted without a sibling
         levels.append(nxt)
     return levels
 
@@ -89,14 +89,14 @@ def verify(proof: list[bytes], root: bytes, leaf: bytes) -> bool:
 
 
 def build_payout_tree(epoch_id: int, payouts: list[dict]) -> dict:
-    """Construit l'arbre complet d'une époque.
+    """Builds the full tree for an epoch.
 
-    payouts: [{"account": "0x…", "aql": int|str, "usdt": int|str}, …] — un seul
-    payout par adresse (le coordinateur agrège par wallet avant d'appeler ici).
-    Retourne {merkle_root, aql_total, usdt_total, claims: [{index, account, aql, usdt, proof}]}.
+    payouts: [{"account": "0x…", "aql": int|str, "usdt": int|str}, …] — only one
+    payout per address (the coordinator aggregates by wallet before calling this).
+    Returns {merkle_root, aql_total, usdt_total, claims: [{index, account, aql, usdt, proof}]}.
     """
     if not payouts:
-        raise ValueError("aucun payout")
+        raise ValueError("no payouts")
     entries = []
     seen = set()
     for p in payouts:
@@ -104,12 +104,12 @@ def build_payout_tree(epoch_id: int, payouts: list[dict]) -> dict:
         aql_amount = int(p.get("aql", 0))
         usdt_amount = int(p.get("usdt", 0))
         if aql_amount < 0 or usdt_amount < 0 or (aql_amount == 0 and usdt_amount == 0):
-            raise ValueError(f"montants invalides pour {account}: aql={aql_amount} usdt={usdt_amount}")
+            raise ValueError(f"invalid amounts for {account}: aql={aql_amount} usdt={usdt_amount}")
         if account in seen:
-            raise ValueError(f"adresse en double: {account} (agréger avant)")
+            raise ValueError(f"duplicate address: {account} (aggregate first)")
         seen.add(account)
         entries.append((account, aql_amount, usdt_amount))
-    # Ordre déterministe : l'index de chaque claim est stable et re-générable.
+    # Deterministic order: each claim's index is stable and can be regenerated.
     entries.sort(key=lambda e: e[0])
 
     leaves = [leaf_hash(epoch_id, i, a, q, u) for i, (a, q, u) in enumerate(entries)]
@@ -119,7 +119,7 @@ def build_payout_tree(epoch_id: int, payouts: list[dict]) -> dict:
     claims = []
     for i, (account, aql_amount, usdt_amount) in enumerate(entries):
         proof = proof_for(levels, i)
-        assert verify(proof, root, leaves[i]), "auto-vérification merkle échouée"
+        assert verify(proof, root, leaves[i]), "merkle self-check failed"
         claims.append(
             {
                 "index": i,

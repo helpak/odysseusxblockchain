@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-/// @title AQL — jeton natif du réseau
-/// @notice Offre plafonnée à 1 milliard. Aucun premine : chaque AQL est créé
-///         par le contrat de réseau (AQLNetwork) en récompense d'un travail
-///         vérifié. Le déployeur ne peut faire qu'une chose, une seule fois :
-///         désigner ce contrat comme émetteur. Ensuite, plus personne n'a de
-///         pouvoir sur le jeton.
+/// @title AQL — the network's native token
+/// @notice Supply capped at 1 billion. No premine: every AQL is created by
+///         the network contract (AQLNetwork) as a reward for verified work.
+///         The deployer can do exactly one thing, exactly once: designate
+///         that contract as the minter. After that, nobody has any power
+///         over the token.
 contract AQLToken {
     string public constant name = "AQL";
     string public constant symbol = "AQL";
@@ -29,7 +29,7 @@ contract AQLToken {
         _deployer = msg.sender;
     }
 
-    /// @notice Désigne l'émetteur, une seule fois, de façon irréversible.
+    /// @notice Designates the minter, once and irreversibly.
     function initMinter(address minter_) external {
         require(msg.sender == _deployer, "AQL: not deployer");
         require(minter == address(0), "AQL: minter already set");
@@ -43,7 +43,7 @@ contract AQLToken {
         require(to != address(0), "AQL: mint to zero");
         require(totalSupply + amount <= MAX_SUPPLY, "AQL: max supply reached");
         totalSupply += amount;
-        // Pas de débordement possible : la somme des soldes == totalSupply <= 1e27.
+        // No overflow possible: the sum of balances == totalSupply <= 1e27.
         unchecked {
             balanceOf[to] += amount;
         }

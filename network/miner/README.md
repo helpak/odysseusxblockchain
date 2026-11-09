@@ -1,61 +1,61 @@
-# Mineur AQL
+# AQL miner
 
-**Un seul fichier, zéro dépendance.** Python 3.10+ suffit. Vous donnez votre
-wallet, vous choisissez ce que vous fournissez, et vos gains s'accumulent à
-chaque époque (1 époque = 1 jour) : de l'**AQL** émis (halving tous les 2 ans)
-et de l'**USDT** payé par les utilisateurs de l'IA.
+**A single file, zero dependencies.** Python 3.10+ is all you need. You give your
+wallet, you choose what you provide, and your earnings accumulate every
+epoch (1 epoch = 1 day): newly issued **AQL** (halving every 2 years)
+and **USDT** paid by the AI's users.
 
-## Minage de calcul (GPU)
+## Compute mining (GPU)
 
-Votre machine fait tourner **le modèle du réseau**. Le mineur l'affiche au
-démarrage, et `GET /v1/models` du coordinateur le donne aussi. Il faut un
-serveur de modèle local compatible OpenAI : Ollama, vLLM ou llama.cpp.
+Your machine runs **the network's model**. The miner shows it at
+startup, and the coordinator's `GET /v1/models` returns it too. You need a
+local OpenAI-compatible model server: Ollama, vLLM or llama.cpp.
 
 ```bash
-# Exemple avec Ollama :
+# Example with Ollama:
 ollama pull qwen2.5:7b-instruct
-python3 aql_miner.py --wallet 0xVOTRE_WALLET --mode gpu \
+python3 aql_miner.py --wallet 0xYOUR_WALLET --mode gpu \
     --model-endpoint http://localhost:11434/v1 \
-    --coordinator https://api.votre-domaine
+    --coordinator https://api.your-domain
 ```
 
-Votre nœud reçoit quatre types de travail, tous utiles à l'IA :
+Your node receives four types of work, all useful to the AI:
 
-| Travail | Ce que fait votre machine | Payé en |
+| Work | What your machine does | Paid in |
 |---|---|---|
-| **serve** | répond aux utilisateurs de l'IA | USDT + AQL |
-| **verify** | rejoue un échantillon de réponses d'autres mineurs (contrôle aléatoire) | USDT + AQL |
-| **measure** | mesure un prompt candidat contre le prompt actuel, sur des tâches générées | AQL |
-| **improve** | propose un meilleur prompt système ; bonus si le réseau l'adopte | AQL |
+| **serve** | answers the AI's users | USDT + AQL |
+| **verify** | replays a sample of other miners' answers (random spot check) | USDT + AQL |
+| **measure** | measures a candidate prompt against the current prompt, on generated tasks | AQL |
+| **improve** | proposes a better system prompt; bonus if the network adopts it | AQL |
 
-**Réputation** : chaque nœud démarre à 10. Un contrôle réussi rapporte +1, un
-contrôle raté coûte −3 et annule les points de la réponse contrôlée. Sous 5,
-le nœud n'est plus servi : servir des réponses fausses ne paie pas.
+**Reputation**: every node starts at 10. A passed check earns +1, a
+failed check costs −3 and cancels the points of the checked answer. Below 5,
+the node no longer receives work: serving wrong answers does not pay.
 
-## Minage de stockage
+## Storage mining
 
-Votre disque héberge des données chiffrées du réseau. Vous êtes payé à chaque
-preuve de stockage : le coordinateur vous demande le sha256 d'une tranche
-aléatoire et d'un nonce, impossible à produire sans détenir les octets.
+Your disk hosts encrypted network data. You are paid for each
+proof of storage: the coordinator asks you for the sha256 of a random slice
+combined with a nonce, which cannot be produced without holding the bytes.
 
 ```bash
-python3 aql_miner.py --wallet 0xVOTRE_WALLET --mode storage \
+python3 aql_miner.py --wallet 0xYOUR_WALLET --mode storage \
     --allocate-gb 100 --storage-path /data/aql_storage \
-    --coordinator https://api.votre-domaine
+    --coordinator https://api.your-domain
 ```
 
-## Ce qu'il faut savoir
+## Good to know
 
-- L'identité du nœud est conservée dans `~/.aql/miner_state.json` : relancer le
-  mineur reprend le même nœud et la même réputation.
-- Diviser sa machine en plusieurs nœuds ne rapporte rien de plus : les gains
-  sont proportionnels au travail vérifié.
-- Vos gains en cours : `GET /api/rewards/<votre_wallet>`. Pour les réclamer
-  (AQL + USDT, plusieurs époques en une transaction) : page « Mon compte » du
-  site.
-- `--max-jobs N` pour un essai rapide, `Ctrl-C` pour arrêter proprement.
+- The node identity is kept in `~/.aql/miner_state.json`: restarting the
+  miner resumes the same node and the same reputation.
+- Splitting your machine into several nodes earns nothing extra: earnings
+  are proportional to verified work.
+- Your pending earnings: `GET /api/rewards/<your_wallet>`. To claim them
+  (AQL + USDT, several epochs in one transaction): the "My account" page of
+  the site.
+- `--max-jobs N` for a quick test, `Ctrl-C` to stop cleanly.
 
-## Docker (optionnel)
+## Docker (optional)
 
 ```bash
 docker build -t aql-miner .

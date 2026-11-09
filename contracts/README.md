@@ -1,65 +1,65 @@
-# Contrats du réseau AQL
+# AQL network contracts
 
-Trois contrats, **sans aucun administrateur** une fois déployés, compilés pour
-l'EVM `paris` (Solidity 0.8.26, zéro dépendance externe).
+Three contracts, **with no administrator at all** once deployed, compiled for
+the `paris` EVM (Solidity 0.8.26, zero external dependencies).
 
-| Contrat | Rôle |
+| Contract | Role |
 |---|---|
-| `AQLToken.sol` | Le jeton **AQL**. Offre plafonnée à **1 milliard**, **aucun premine** : chaque AQL est créé par AQLNetwork en récompense d'un travail vérifié. Le déployeur désigne l'émetteur une seule fois, puis perd tout pouvoir. |
-| `AQLNetwork.sol` | **Émission** : 1 époque = 1 jour à partir de la genèse ; au plus 684 931,5 AQL par époque, **divisé par 2 tous les 730 jours** (~2 ans). Une époque ne peut être réglée qu'**une fois terminée** (horloge de la chaîne). **Paiements** : `pay()` reçoit l'USDT des utilisateurs et le répartit **67 % mineurs / 33 % stakers**. **Récompenses** : les oracles votent la racine merkle des gains de chaque époque ; il faut une **majorité stricte** d'oracles d'accord sur exactement les mêmes valeurs. Les mineurs réclament leurs gains avec `claim`, ou `claimMany` pour plusieurs époques en une seule transaction. |
-| `AQLStaking.sol` | Les détenteurs stakent leurs AQL et reçoivent les 33 %. Les revenus s'écoulent **à la seconde sur 7 jours** : la part de chacun dépend du temps réellement passé staké et de son poids. Paliers : sans verrou ×1, 90 j ×1,25, 180 j ×1,5, 365 j ×2. |
-| `SafeToken.sol` | Transferts compatibles avec l'USDT réel (qui ne renvoie aucune valeur). |
-| `MockUSDT.sol` | Imitation de l'USDT (6 décimales, sans valeur de retour, frais optionnel). **Tests uniquement.** |
+| `AQLToken.sol` | The **AQL** token. Supply capped at **1 billion**, **no premine**: every AQL is created by AQLNetwork as a reward for verified work. The deployer designates the minter once, then loses all power. |
+| `AQLNetwork.sol` | **Emission**: 1 epoch = 1 day starting from genesis; at most 684,931.5 AQL per epoch, **halved every 730 days** (~2 years). An epoch can only be settled **once it has ended** (chain clock). **Payments**: `pay()` receives USDT from users and splits it **67% miners / 33% stakers**. **Rewards**: the oracles vote on the merkle root of each epoch's earnings; a **strict majority** of oracles must agree on exactly the same values. Miners claim their earnings with `claim`, or `claimMany` for several epochs in a single transaction. |
+| `AQLStaking.sol` | Holders stake their AQL and receive the 33%. Revenue streams **by the second over 7 days**: each holder's share depends on the time actually spent staked and on their weight. Tiers: no lock ×1, 90 days ×1.25, 180 days ×1.5, 365 days ×2. |
+| `SafeToken.sol` | Transfers compatible with the real USDT (which returns no value). |
+| `MockUSDT.sol` | Imitation of USDT (6 decimals, no return value, optional fee). **Tests only.** |
 
-## Garanties inscrites dans le code
+## Guarantees written into the code
 
-- **Calendrier d'émission infalsifiable** : aucune époque en cours ou future ne
-  peut être réglée ; chaque époque est plafonnée à sa récompense avec halving ;
-  l'émission non attribuée n'est jamais créée. Total maximal : 999 999 999,99 AQL.
-- **Plafonds par époque** : impossible de réclamer plus que ce qu'une époque a
-  déclaré, impossible de déclarer plus que le pool USDT des mineurs. Une racine
-  erronée ne peut pas puiser dans les fonds des autres époques.
-- **Pas de captation des dividendes** : staker juste avant un paiement puis
-  retirer ne rapporte quasiment rien (testé : < 0,01 %).
-- **Montants mesurés, jamais déclarés** : la répartition se fait sur l'USDT
-  réellement reçu (robuste à un frais de transfert).
-- **Oracles** : seuil majoritaire obligatoire ; un oracle peut être remplacé au
-  même seuil (clé perdue/compromise), ce qui invalide les votes en cours.
+- **Tamper-proof emission schedule**: no current or future epoch can be
+  settled; each epoch is capped at its reward with halving; emission that is
+  not allocated is never created. Maximum total: 999,999,999.99 AQL.
+- **Per-epoch caps**: it is impossible to claim more than an epoch declared,
+  and impossible to declare more than the miners' USDT pool. A wrong root
+  cannot draw on the funds of other epochs.
+- **No dividend sniping**: staking right before a payment and then
+  withdrawing earns almost nothing (tested: < 0.01%).
+- **Amounts measured, never declared**: the split is based on the USDT
+  actually received (robust to a transfer fee).
+- **Oracles**: a majority threshold is mandatory; an oracle can be replaced at
+  the same threshold (lost/compromised key), which invalidates pending votes.
 
-**Limite assumée de la v1** : les oracles votent ce que calcule le
-coordinateur. Le seuil protège contre une clé volée, pas contre un coordinateur
-faux. L'étape suivante : chaque oracle recalcule les gains de façon
-indépendante avant de voter.
+**Known limitation of v1**: the oracles vote on what the coordinator
+computes. The threshold protects against a stolen key, not against a dishonest
+coordinator. Next step: each oracle recomputes the earnings independently
+before voting.
 
-## Commandes
+## Commands
 
 ```bash
 cd contracts
-npm install          # solc 0.8.26 + ethers v6 (+ ganache pour les tests)
-npm run compile      # artefacts ABI + bytecode dans build/
-npm test             # E2E sur EVM locale : fonctionnement normal + 9 scénarios d'attaque,
-                     # avec des arbres merkle générés par le Python du coordinateur
+npm install          # solc 0.8.26 + ethers v6 (+ ganache for the tests)
+npm run compile      # ABI + bytecode artifacts in build/
+npm test             # E2E on a local EVM: normal operation + 9 attack scenarios,
+                     # with merkle trees generated by the coordinator's Python code
 ```
 
-## Déploiement
+## Deployment
 
 ```bash
-export RPC_URL=https://…                      # Ethereum mainnet en production
-export DEPLOYER_PRIVATE_KEY=0x…               # perd tout rôle après le déploiement
-export ORACLES=0xA…,0xB…,0xC…,0xD…,0xE…        # 5 oracles indépendants recommandés
-export ORACLE_THRESHOLD=3                     # majorité stricte
-export USDT_ADDRESS=0xdAC17F958D2ee523a2206206994597C13D831ec7   # USDT sur Ethereum (à revérifier)
-# export GENESIS_TS=…                         # début de l'époque 0 (défaut : maintenant)
+export RPC_URL=https://…                      # Ethereum mainnet in production
+export DEPLOYER_PRIVATE_KEY=0x…               # loses every role after deployment
+export ORACLES=0xA…,0xB…,0xC…,0xD…,0xE…        # 5 independent oracles recommended
+export ORACLE_THRESHOLD=3                     # strict majority
+export USDT_ADDRESS=0xdAC17F958D2ee523a2206206994597C13D831ec7   # USDT on Ethereum (double-check)
+# export GENESIS_TS=…                         # start of epoch 0 (default: now)
 npm run deploy
 ```
 
-Le script écrit `deployments.<chainId>.json` et affiche les adresses ainsi que
-`GENESIS_TS`, **à reporter à l'identique dans la configuration du
-coordinateur** : coordinateur et contrat doivent compter les mêmes époques.
+The script writes `deployments.<chainId>.json` and prints the addresses as well
+as `GENESIS_TS`, **which must be copied exactly into the coordinator's
+configuration**: the coordinator and the contract must count the same epochs.
 
-## Exploitation
+## Operation
 
-Chaque oracle fait tourner sa propre instance, avec sa propre clé :
+Each oracle runs its own instance, with its own key:
 
 ```bash
 COORDINATOR_URL=… COORDINATOR_ADMIN_TOKEN=… RPC_URL=… \
@@ -67,6 +67,6 @@ ORACLE_PRIVATE_KEY=0x… AQL_NETWORK_ADDRESS=0x… \
     npm run oracle
 ```
 
-Les utilisateurs paient via `AQLNetwork.pay(montant, réf_compte)` après un
-`approve` USDT. Avec l'USDT réel, un `approve` vers une valeur non nulle exige
-de repasser d'abord l'allowance à 0 : c'est une particularité du contrat USDT.
+Users pay via `AQLNetwork.pay(amount, accountRef)` after a USDT
+`approve`. With the real USDT, an `approve` to a non-zero value requires
+first resetting the allowance to 0: this is a quirk of the USDT contract.

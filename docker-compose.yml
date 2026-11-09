@@ -1,13 +1,13 @@
 name: aql-network
 
-# Pile du réseau AQL :
-#   - coordinator : IA (API compatible OpenAI), comptes, prix, jobs, époques (port 9000)
-#   - web         : le site public (port 8088) — en production, publié sur Vercel
-# Profils optionnels :
-#   --profile oracle    : un oracle (vote des époques on-chain) ; un par opérateur
-#   --profile miner     : des nœuds de minage (modèle local Ollama + mineur GPU + stockage)
-#   --profile workspace : l'espace de travail Odysseus (ai/), branchable sur le réseau
-#                         comme fournisseur de modèle compatible OpenAI
+# AQL network stack:
+#   - coordinator: AI (OpenAI-compatible API), accounts, pricing, jobs, epochs (port 9000)
+#   - web:         the public website (port 8088) — in production, published on Vercel
+# Optional profiles:
+#   --profile oracle:    an oracle (votes on epochs on-chain); one per operator
+#   --profile miner:     mining nodes (local Ollama model + GPU miner + storage)
+#   --profile workspace: the Odysseus workspace (ai/), which can be plugged into the network
+#                        as an OpenAI-compatible model provider
 
 services:
   odysseus:
@@ -77,7 +77,7 @@ services:
 
   searxng:
     profiles: ["workspace"]
-    # Pinnée, pas :latest — odysseus attend le healthcheck de searxng.
+    # Pinned, not :latest — odysseus waits for the searxng healthcheck.
     image: docker.io/searxng/searxng:2026.5.31-7159b8aed
     entrypoint:
       - /bin/sh
@@ -132,12 +132,12 @@ services:
     ports:
       - "${COORDINATOR_BIND:-127.0.0.1}:${COORDINATOR_PORT:-9000}:9000"
     volumes:
-      # Base du coordinateur et règlements d'époque (racines + preuves publiques).
+      # Coordinator database and epoch settlements (roots + public proofs).
       - ./data/coordinator:/app/data:z
       - ./data/settlements:/app/settlements:z
     environment:
       - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
-      # GENESIS_TS : identique au contrat (affiché par `npm run deploy`).
+      # GENESIS_TS: same value as in the contract (printed by `npm run deploy`).
       - GENESIS_TS=${GENESIS_TS:-0}
       - NETWORK_MODEL=${NETWORK_MODEL:-qwen2.5:7b-instruct}
       - RPC_URL=${RPC_URL:-}
@@ -163,7 +163,7 @@ services:
     restart: unless-stopped
 
 
-  # ---- Profil oracle : publication automatique des époques on-chain ----
+  # ---- Oracle profile: automatic on-chain publication of epochs ----
 
   oracle:
     profiles: ["oracle"]
@@ -171,8 +171,8 @@ services:
       context: ./contracts
       dockerfile: Dockerfile.oracle
     environment:
-      # Chaque opérateur d'oracle tourne sur SA machine et vise le coordinateur
-      # public (https://api.<domaine>) ; la valeur par défaut sert aux essais locaux.
+      # Each oracle operator runs on THEIR OWN machine and points to the public
+      # coordinator (https://api.<domain>); the default value is for local testing.
       - COORDINATOR_URL=${COORDINATOR_URL:-http://coordinator:9000}
       - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
       - RPC_URL=${RPC_URL:-}
@@ -183,14 +183,14 @@ services:
       - oracle-state:/state
     restart: unless-stopped
 
-  # ---- Profil miner : des nœuds de minage sur cette machine ----
+  # ---- Miner profile: mining nodes on this machine ----
 
   ollama:
     profiles: ["miner"]
     image: docker.io/ollama/ollama:latest
-    # Démarre le serveur puis télécharge le modèle du réseau (une seule fois,
-    # conservé dans le volume). GPU NVIDIA : ajouter une réservation de
-    # périphérique, cf. ai/docker/gpu.nvidia.yml pour la syntaxe.
+    # Starts the server, then downloads the network model (only once; it is
+    # kept in the volume). NVIDIA GPU: add a device reservation; see
+    # ai/docker/gpu.nvidia.yml for the syntax.
     entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5; ollama pull \"$$NETWORK_MODEL\"; wait"]
     environment:
       - NETWORK_MODEL=${NETWORK_MODEL:-qwen2.5:7b-instruct}
@@ -203,7 +203,7 @@ services:
     build: ./network/miner
     command:
       - "--wallet"
-      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      # If empty, the miner refuses to start and prints a clear message.
       - "${MINER_WALLET:-}"
       - "--mode"
       - "gpu"
@@ -214,7 +214,7 @@ services:
       - "--state-file"
       - "/state/miner_state.json"
     environment:
-      # Serveur de modèle : le service ollama ci-dessus par défaut.
+      # Model server: the ollama service above by default.
       - MODEL_ENDPOINT=${MINER_MODEL_ENDPOINT:-http://ollama:11434/v1}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -232,7 +232,7 @@ services:
     build: ./network/miner
     command:
       - "--wallet"
-      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      # If empty, the miner refuses to start and prints a clear message.
       - "${MINER_WALLET:-}"
       - "--mode"
       - "storage"

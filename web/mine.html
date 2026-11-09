@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Miner — AQL Network</title>
+<title>Mine — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -17,63 +18,63 @@
   <div class="container">
 
     <section class="hero">
-      <h1>Miner de l'<span class="grad">AQL</span></h1>
-      <p class="lead">Un seul fichier Python, zéro dépendance. Vous donnez votre wallet, vous
-        choisissez ce que vous fournissez, et vos gains (AQL + USDT) s'accumulent à chaque époque.
-        Tout le travail payé sert réellement l'IA.</p>
+      <h1>Mine <span class="grad">AQL</span></h1>
+      <p class="lead">One Python file, zero dependencies. You give your wallet, you choose what
+        you provide, and your earnings (AQL + USDT) build up every epoch. All paid work really
+        serves the AI.</p>
     </section>
 
     <section>
-      <h2>1. Choisissez ce que vous fournissez</h2>
+      <h2>1. Choose what you provide</h2>
       <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
         <div class="card choice selected" id="choice-gpu">
-          <h3>Calcul (GPU)</h3>
-          <p>Votre machine fait tourner le modèle du réseau (<strong id="net-model">…</strong>) et
-          <strong>sert</strong> les utilisateurs (payé en USDT + AQL), <strong>contrôle</strong> d'autres
-          mineurs, <strong>propose et mesure</strong> des améliorations (AQL). Il faut un serveur de
-          modèle local compatible OpenAI : Ollama, vLLM ou llama.cpp.</p>
+          <h3>Compute (GPU)</h3>
+          <p>Your machine runs the network's model (<strong id="net-model">…</strong>) and
+          <strong>serves</strong> users (paid in USDT + AQL), <strong>checks</strong> other miners,
+          <strong>proposes and measures</strong> improvements (AQL). You need a local OpenAI-compatible
+          model server: Ollama, vLLM or llama.cpp.</p>
         </div>
         <div class="card choice" id="choice-storage">
-          <h3>Stockage</h3>
-          <p>Votre disque héberge des données chiffrées du réseau. Vous êtes payé en AQL à chaque
-          <strong>preuve de stockage</strong>, impossible à fournir sans détenir les données.</p>
+          <h3>Storage</h3>
+          <p>Your disk hosts encrypted network data. You are paid in AQL for every
+          <strong>proof of storage</strong>, which cannot be produced without holding the data.</p>
         </div>
       </div>
 
       <div id="opt-gpu" class="card" style="margin-top:18px;">
-        <label for="model-endpoint">Adresse de votre serveur de modèle local</label>
+        <label for="model-endpoint">Address of your local model server</label>
         <input type="text" id="model-endpoint" value="http://localhost:11434/v1">
-        <p class="muted" style="font-size:0.85rem;">Avec Ollama : <span class="mono" id="pull-cmd">ollama pull …</span>
-          puis laissez Ollama tourner. Modèle sous licence permissive (Apache 2.0) : usage commercial sans restriction.</p>
+        <p class="muted" style="font-size:0.85rem;">With Ollama: <span class="mono" id="pull-cmd">ollama pull …</span>
+          then leave Ollama running. Permissively licensed model (Apache 2.0): unrestricted commercial use.</p>
       </div>
 
       <div id="opt-storage" class="card" style="margin-top:18px; display:none;">
-        <label for="allocate-gb">Espace alloué au réseau (Go)</label>
+        <label for="allocate-gb">Space given to the network (GB)</label>
         <input type="number" id="allocate-gb" value="100" min="1">
-        <label for="storage-path">Dossier de stockage</label>
+        <label for="storage-path">Storage folder</label>
         <input type="text" id="storage-path" value="./aql_storage">
       </div>
     </section>
 
     <section>
-      <h2>2. Votre wallet</h2>
-      <p class="section-sub">L'adresse EVM (MetaMask, Rabby, Ledger…) qui recevra vos gains. Le mineur
-        n'a <strong>jamais</strong> besoin de votre clé privée.</p>
+      <h2>2. Your wallet</h2>
+      <p class="section-sub">The EVM address (MetaMask, Rabby, Ledger…) that will receive your earnings.
+        The miner <strong>never</strong> needs your private key.</p>
       <input type="text" id="wallet" class="mono" placeholder="0x…" spellcheck="false">
       <p class="muted" id="wallet-status" style="font-size:0.88rem;"></p>
     </section>
 
     <section>
-      <h2>3. Lancez le mineur</h2>
-      <p class="section-sub">Prérequis : Python 3.10+. Téléchargez
-        <span class="mono">network/miner/aql_miner.py</span> depuis le dépôt du projet, puis :</p>
+      <h2>3. Start the miner</h2>
+      <p class="section-sub">Requirement: Python 3.10+. Download
+        <span class="mono">network/miner/aql_miner.py</span> from the project repository, then:</p>
       <pre class="cmd" id="command">…</pre>
-      <div class="copy-row"><button class="btn" id="btn-copy">Copier la commande</button></div>
+      <div class="copy-row"><button class="btn" id="btn-copy">Copy command</button></div>
       <div class="banner info">
-        Chaque nœud démarre avec une réputation de 10. Un contrôle réussi rapporte +1, une réponse
-        fausse coûte −3 et ses gains. Sous 5, le nœud ne sert plus. Diviser sa machine en plusieurs
-        nœuds ne rapporte rien de plus : les gains sont proportionnels au travail vérifié.
-        Réclamez vos gains sur <a href="account.html">Mon compte</a>.
+        Every node starts with a reputation of 10. A passed check earns +1, a wrong answer costs −3
+        and its earnings. Below 5, the node stops serving. Splitting one machine into several nodes
+        earns nothing extra: earnings are proportional to verified work.
+        Claim your earnings on <a href="account.html">My account</a>.
       </div>
     </section>
 

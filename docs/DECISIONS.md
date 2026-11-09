@@ -1,208 +1,208 @@
-# Registre des décisions AQL
+# AQL decision log
 
-Chaque problème du projet est posé comme une question. La **réponse
-recommandée est en premier (✅) et c'est elle qui est appliquée**. Les autres
-options sont gardées avec la raison de leur rejet, pour que tout le monde
-puisse vérifier le raisonnement.
+Every problem in the project is framed as a question. The **recommended
+answer comes first (✅) and it is the one that is applied**. The other
+options are kept along with the reason they were rejected, so that everyone
+can check the reasoning.
 
-État : **fait** = codé et vérifié dans ce dépôt ; **documenté** = règle
-d'exploitation, rien à coder ; **v2** = prévu, pas encore codé.
+Status: **done** = coded and verified in this repository; **documented** = operating
+rule, nothing to code; **v2** = planned, not yet coded.
 
 ---
 
-## Économie
+## Economics
 
-### 1. Comment le prix de l'AQL est-il fixé, sans intervention humaine ?
-- ✅ **Par le marché, automatiquement** : un pool d'échange AQL/USDT (Uniswap).
-  Le prix découle des achats et des ventes, et les écarts entre plateformes
-  sont corrigés par l'arbitrage. Le protocole ne fixe aucun prix, exactement
-  comme pour Bitcoin. Le site affiche le prix lu dans le pool.
-- ❌ Vote du prix tous les 2 jours : un prix voté n'oblige personne à acheter
-  ni à vendre à ce prix. Les détenteurs auraient intérêt à voter haut, et le
-  vrai prix serait celui des échanges de toute façon.
-- ❌ Prix garanti par le contrat (rachat à prix fixe) : il faudrait une réserve
-  de dollars pour honorer ce prix, et elle serait vidée à la première vague de
-  ventes.
+### 1. How is the AQL price set, without human intervention?
+- ✅ **By the market, automatically**: an AQL/USDT exchange pool (Uniswap).
+  The price results from buying and selling, and price gaps between platforms
+  are corrected by arbitrage. The protocol sets no price, exactly
+  as with Bitcoin. The site displays the price read from the pool.
+- ❌ A price vote every 2 days: a voted price does not force anyone to buy
+  or sell at that price. Holders would have an incentive to vote high, and the
+  real price would be the trading price anyway.
+- ❌ A price guaranteed by the contract (buyback at a fixed price): it would require a reserve
+  of dollars to honor that price, and the reserve would be drained by the first wave of
+  selling.
 
-État : **fait**. Le tableau de bord lit le prix du pool dès que son adresse
-est renseignée.
+Status: **done**. The dashboard reads the pool price as soon as its address
+is set.
 
-### 2. Qui crée la liquidité de départ du pool ?
-- ✅ **Les premiers mineurs et détenteurs, librement.** Créer un pool Uniswap
-  ne demande aucune permission. Comme pour Bitcoin à ses débuts, le marché naît
-  quand des gens veulent échanger.
-- ❌ Liquidité détenue par le protocole : il faudrait prélever sur les 67/33,
-  ce qui change la répartition décidée et retarde les paiements des mineurs.
+### 2. Who provides the pool's initial liquidity?
+- ✅ **The first miners and holders, freely.** Creating a Uniswap pool
+  requires no permission. As with Bitcoin in its early days, the market is born
+  when people want to trade.
+- ❌ Protocol-owned liquidity: it would have to be taken out of the 67/33,
+  which changes the agreed split and delays miner payments.
 
-État : **documenté**.
+Status: **documented**.
 
-### 3. Comment le prix de l'IA (par million de tokens) est-il fixé ?
-- ✅ **Automatiquement selon la charge du réseau**, sur le principe des frais
-  de base d'Ethereum. À chaque époque : réseau saturé, le prix monte (+12,5 %
-  au plus) ; réseau sous-utilisé, il baisse (−12,5 % au plus). Bornes minimale
-  et maximale. Plus il y a de mineurs, plus le prix baisse ; plus il y a de
-  demande, plus les mineurs gagnent.
-- Option v2 : chaque mineur fixe son propre prix (enchères). Plus fin, mais
-  plus lent à servir et plus complexe.
-- ❌ Prix fixé par une équipe : intervention humaine.
+### 3. How is the AI price (per million tokens) set?
+- ✅ **Automatically according to network load**, on the same principle as Ethereum's base
+  fee. Each epoch: if the network is saturated, the price rises (+12.5%
+  at most); if the network is underused, it falls (−12.5% at most). There are minimum
+  and maximum bounds. The more miners there are, the lower the price; the more
+  demand there is, the more miners earn.
+- v2 option: each miner sets its own price (auctions). Finer-grained, but
+  slower to serve and more complex.
+- ❌ A price set by a team: human intervention.
 
-État : **fait**.
+Status: **done**.
 
-### 4. Quelles formules d'abonnement ?
-- ✅ **Crédits prépayés en USDT**, en trois formules : Essai (5 USDT),
-  Standard (20 USDT) et Pro (100 USDT). Les crédits sont consommés au prix du
-  moment. Les limites : le crédit restant, plus un plafond de requêtes par
-  minute et par compte.
-- ❌ Abonnement illimité à prix fixe : un utilisateur intensif coûterait plus
-  qu'il ne paie, et les mineurs seraient sous-payés.
+### 4. Which subscription plans?
+- ✅ **Prepaid credits in USDT**, in three plans: Trial (5 USDT),
+  Standard (20 USDT) and Pro (100 USDT). Credits are consumed at the
+  current price. The limits: the remaining credit, plus a cap on requests per
+  minute per account.
+- ❌ An unlimited flat-rate subscription: a heavy user would cost more
+  than they pay, and miners would be underpaid.
 
-État : **fait**.
+Status: **done**.
 
-### 5. Les détenteurs reçoivent-ils de l'USDT ou de l'AQL racheté ?
-- ✅ **De l'USDT, directement.** C'est stable, lisible, et sans effet sur le
-  marché.
-- Option : racheter de l'AQL sur le marché et le redistribuer. Ça soutient le
-  prix, mais c'est plus complexe et ça peut être anticipé par des traders.
+### 5. Do holders receive USDT or bought-back AQL?
+- ✅ **USDT, directly.** It is stable, easy to read, and has no effect on the
+  market.
+- Option: buy back AQL on the market and redistribute it. It supports the
+  price, but it is more complex and traders can anticipate it.
 
-État : **fait** (contrat AQLStaking).
+Status: **done** (AQLStaking contract).
 
-### 6. Comment payer par carte bancaire sans société au centre du réseau ?
-- ✅ **Un bouton « Acheter des USDT par carte »** qui mène à un service
-  d'achat de crypto. C'est ce service qui vérifie l'identité de l'acheteur. Le
-  protocole ne touche jamais d'euros ni de dollars. L'adresse du service se
-  configure sur le site.
-- ❌ Compte de paiement par carte (type Stripe) : il exige une société
-  titulaire qui encaisse l'argent, ce qui contredit un réseau sans
-  opérateur central. Ce service a été supprimé.
+### 6. How can people pay by bank card without a company at the center of the network?
+- ✅ **A "Buy USDT by card" button** that leads to a crypto purchase
+  service. That service verifies the buyer's identity. The
+  protocol never touches euros or dollars. The service's address is
+  configured on the site.
+- ❌ A card payment account (Stripe-style): it requires a company as the
+  account holder that collects the money, which contradicts a network with no
+  central operator. This service has been removed.
 
-État : **fait**.
+Status: **done**.
 
-### 7. Comment éviter des frais Ethereum trop lourds ?
-- ✅ **Payer en une fois, réclamer en une fois.** Les crédits sont prépayés
-  (aucune transaction par requête), et `claimMany` réclame plusieurs époques
-  en une seule transaction.
-- Option : passer sur une couche 2 (moins chère, mais séquenceur centralisé).
-  Les contrats sont compatibles si le besoin se présente.
+### 7. How can heavy Ethereum fees be avoided?
+- ✅ **Pay once, claim once.** Credits are prepaid
+  (no transaction per request), and `claimMany` claims several epochs
+  in a single transaction.
+- Option: move to a layer 2 (cheaper, but with a centralized sequencer).
+  The contracts are compatible if the need arises.
 
-État : **fait**.
+Status: **done**.
 
-## Minage et vérification
+## Mining and verification
 
-### 8. Comment empêcher qu'on gagne plus en multipliant les nœuds (attaque sybil) ?
-- ✅ **Ne payer que du travail utile, vérifié et proportionnel au volume.**
-  Diviser sa puissance en 50 nœuds ne rapporte rien de plus. Le bench SHA-256,
-  facile à multiplier et inutile pour l'IA, est supprimé. Les votes subjectifs
-  sont remplacés par une mesure au benchmark.
-- Option v2 : staker de l'AQL pour avoir le droit de miner. Ça freinerait les
-  petits mineurs, donc seulement si les attaques apparaissent.
+### 8. How can we prevent people from earning more by multiplying nodes (sybil attack)?
+- ✅ **Pay only for useful, verified work, proportional to volume.**
+  Splitting your power into 50 nodes earns nothing more. The SHA-256 bench,
+  easy to multiply and useless for AI, has been removed. Subjective votes
+  are replaced by a benchmark measurement.
+- v2 option: stake AQL to earn the right to mine. It would hold back
+  small miners, so only if attacks appear.
 
-État : **fait**.
+Status: **done**.
 
-### 9. Comment vérifier que les mineurs servent vraiment l'IA ?
-- ✅ **Contrôle aléatoire avec arbitrage.** 5 % des requêtes sont rejouées
-  par un autre mineur (autre wallet), à température 0, et les réponses sont
-  comparées. En cas d'écart, un troisième mineur départage : celui qui
-  s'écarte de l'arbitre perd 3 points de réputation et les gains de cette
-  réponse. Sous un seuil, un mineur est exclu du service.
-- ❌ Preuves cryptographiques d'inférence : pas encore praticables pour de
-  grands modèles.
+### 9. How can we verify that miners really serve the AI?
+- ✅ **Random checks with arbitration.** 5% of requests are replayed
+  by another miner (another wallet), at temperature 0, and the answers are
+  compared. If they differ, a third miner breaks the tie: the one that
+  deviates from the arbiter loses 3 reputation points and the earnings for that
+  response. Below a threshold, a miner is excluded from serving.
+- ❌ Cryptographic proofs of inference: not yet practical for
+  large models.
 
-Limite assumée : deux machines honnêtes peuvent produire des réponses un peu
-différentes, d'où un seuil de similarité tolérant. Un tricheur prudent peut
-passer quelques contrôles, mais pas des centaines. État : **fait**.
+Accepted limitation: two honest machines can produce slightly
+different answers, hence a tolerant similarity threshold. A careful cheater can
+pass a few checks, but not hundreds. Status: **done**.
 
-### 10. Comment prouver qu'une amélioration améliore vraiment l'IA ?
-- ✅ **Mesure sur un benchmark public et figé.** Un candidat (prompt système)
-  est mesuré contre la version actuelle par 2 mineurs vérificateurs tirés au
-  sort. Il n'est accepté que si les 2 mesurent un gain d'au moins 2 points.
-  L'auteur est payé seulement dans ce cas.
-- ❌ Votes de mineurs : subjectifs, et ouverts à la collusion. Supprimés.
-- Option v2 : améliorations de poids (LoRA), avec le même protocole, quand les
-  mineurs auront une chaîne d'entraînement.
+### 10. How can we prove that an improvement really improves the AI?
+- ✅ **Measurement on a public, fixed benchmark.** A candidate (system prompt)
+  is measured against the current version by 2 verifier miners drawn at
+  random. It is accepted only if both measure a gain of at least 2 points.
+  The author is paid only in that case.
+- ❌ Miner votes: subjective, and open to collusion. Removed.
+- v2 option: weight improvements (LoRA), with the same protocol, once
+  miners have a training pipeline.
 
-État : **fait** pour les prompts.
+Status: **done** for prompts.
 
-### 10 bis. Et si une « amélioration » glissait une consigne nuisible ?
-- ✅ **Filtre avant toute mesure.** Un prompt candidat qui contient un lien,
-  un nom de domaine, une adresse de contact, une adresse de wallet, une
-  messagerie ou du code est refusé d'office. Un bon prompt système n'en a
-  jamais besoin, alors qu'un prompt promu s'applique à tous les utilisateurs.
-- ❌ Ne mesurer que le score : un candidat pourrait gagner des points tout en
-  recommandant un site frauduleux.
+### 10b. What if an "improvement" slipped in a harmful instruction?
+- ✅ **A filter before any measurement.** A candidate prompt that contains a link,
+  a domain name, a contact address, a wallet address, a messaging service
+  or code is rejected outright. A good system prompt never
+  needs any of these, whereas a promoted prompt applies to all users.
+- ❌ Measuring only the score: a candidate could gain points while
+  recommending a fraudulent site.
 
-État : **fait** (filtre testé sur 8 cas nuisibles).
+Status: **done** (filter tested on 8 harmful cases).
 
-### 11. Comment comparer l'IA aux meilleurs modèles, toutes les 2 heures ?
-- ✅ **Même test pour tous.** Le coordinateur fait passer le benchmark public
-  au réseau toutes les 2 heures, ainsi qu'aux modèles de référence configurés
-  (n'importe quelle API compatible OpenAI, avec une clé facultative). Les
-  scores s'affichent côte à côte, avec leur historique.
-- ❌ Afficher les scores publiés par les laboratoires : ce n'est pas le même
-  test, la comparaison serait trompeuse.
-- ❌ Jauge « % du niveau de Claude » : ce serait une affirmation non mesurée.
+### 11. How can the AI be compared with the best models, every 2 hours?
+- ✅ **The same test for everyone.** The coordinator runs the public benchmark
+  on the network every 2 hours, as well as on the configured reference models
+  (any OpenAI-compatible API, with an optional key). The
+  scores are displayed side by side, with their history.
+- ❌ Displaying the scores published by the labs: it is not the same
+  test, so the comparison would be misleading.
+- ❌ A "% of Claude's level" gauge: it would be an unmeasured claim.
 
-État : **fait**.
+Status: **done**.
 
-### 12. Quel modèle le réseau sert-il ?
-- ✅ **Un modèle open-weights sous licence permissive** (Apache 2.0, par
-  exemple Qwen) : usage commercial sans restriction.
-- À éviter : les licences « communautaires » qui restreignent l'usage
-  commercial ou au-delà d'un certain nombre d'utilisateurs.
+### 12. Which model does the network serve?
+- ✅ **An open-weights model under a permissive license** (Apache 2.0, for
+  example Qwen): commercial use without restriction.
+- To avoid: "community" licenses that restrict commercial use
+  or use beyond a certain number of users.
 
-État : **documenté** (page « Miner »).
+Status: **documented** ("Mine" page).
 
-## Confiance et sécurité
+## Trust and security
 
-### 13. Combien d'oracles, et qui les opère ?
-- ✅ **5 oracles, seuil de 3, opérés par des personnes différentes**, chacun
-  avec son propre daemon. Un oracle peut être remplacé au même seuil.
-- ❌ Un seul oracle : point unique de défaillance.
+### 13. How many oracles, and who runs them?
+- ✅ **5 oracles, a threshold of 3, run by different people**, each
+  with its own daemon. An oracle can be replaced at the same voting threshold.
+- ❌ A single oracle: a single point of failure.
 
-Limite v1 : tous les oracles lisent le même coordinateur. En v2, chaque oracle
-recalcule les gains de façon indépendante. État : **fait** (contrats et
-daemon) ; le choix des 5 opérateurs se fait au déploiement.
+v1 limitation: all oracles read the same coordinator. In v2, each oracle
+recomputes the earnings independently. Status: **done** (contracts and
+daemon); the 5 operators are chosen at deployment.
 
-### 14. Le coordinateur est centralisé : que faire ?
-- ✅ **v1 assumée et transparente** : code ouvert, et chaque règlement est
-  public avec ses preuves, que n'importe qui peut revérifier.
-- v2 : plusieurs coordinateurs, et recalcul indépendant par les oracles.
+### 14. The coordinator is centralized: what should be done?
+- ✅ **An acknowledged and transparent v1**: open code, and every settlement is
+  public with its proofs, which anyone can re-verify.
+- v2: several coordinators, and independent recomputation by the oracles.
 
-État : **documenté**.
+Status: **documented**.
 
-### 15. Comment protéger la vie privée des conversations ?
-- ✅ **L'historique reste dans le navigateur de l'utilisateur.** Le réseau de
-  stockage ne reçoit que des données chiffrées par l'application.
-- **Point à afficher clairement** : le mineur qui sert une requête la voit en
-  clair, car c'est inévitable pour faire tourner le modèle. Le portail le dit
-  aux utilisateurs avant le premier message.
+### 15. How is the privacy of conversations protected?
+- ✅ **The history stays in the user's browser.** The storage network
+  only receives data encrypted by the application.
+- **A point to display clearly**: the miner that serves a request sees it in
+  plain text, because this is unavoidable to run the model. The portal tells
+  users before the first message.
 
-État : **fait**.
+Status: **done**.
 
-### 16. Comment éviter les abus (spam, rafales de requêtes) ?
-- ✅ **Plafond de requêtes par minute et par compte**, et aucune requête sans
-  crédit.
+### 16. How can abuse (spam, bursts of requests) be prevented?
+- ✅ **A cap on requests per minute per account**, and no request without
+  credit.
 
-État : **fait**.
+Status: **done**.
 
-## Déploiement
+## Deployment
 
-### 17. Où héberger chaque partie ?
-- ✅ **Le site sur Vercel** (statique uniquement), **le coordinateur sur un
-  serveur Docker derrière HTTPS**, et **les oracles sur des machines
-  séparées**.
-- ❌ Tout sur Vercel : le coordinateur a besoin d'une base persistante et de
-  processus permanents, ce que Vercel ne fournit pas.
+### 17. Where should each part be hosted?
+- ✅ **The site on Vercel** (static only), **the coordinator on a
+  Docker server behind HTTPS**, and **the oracles on separate
+  machines**.
+- ❌ Everything on Vercel: the coordinator needs a persistent database and
+  always-running processes, which Vercel does not provide.
 
-État : **fait** (configuration Vercel corrigée).
+Status: **done** (Vercel configuration fixed).
 
-### 18. Comment garantir que le coordinateur et la chaîne comptent les mêmes époques ?
-- ✅ **Une seule genèse** : le déploiement affiche `GENESIS_TS`, et le
-  coordinateur utilise exactement cette valeur.
+### 18. How can we guarantee that the coordinator and the chain count the same epochs?
+- ✅ **A single genesis**: the deployment prints `GENESIS_TS`, and the
+  coordinator uses exactly that value.
 
-État : **fait**.
+Status: **done**.
 
-### 19. Le cadre juridique est-il réglé ?
-- ✅ **Analyse juridique avant tout lancement**, dans chaque juridiction où
-  le réseau est exploité ou promu (voir LEGAL.md).
+### 19. Is the legal framework settled?
+- ✅ **Legal analysis before any launch**, in every jurisdiction where
+  the network is operated or promoted (see LEGAL.md).
 
-État : **à faire par les opérateurs avec leurs conseils**, avant le lancement.
+Status: **to be done by the operators with their advisers**, before launch.

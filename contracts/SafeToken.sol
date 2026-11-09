@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-/// @notice Sous-ensemble ERC-20 utilisé par le réseau. Les sélecteurs servent
-///         aux appels bas niveau de SafeToken : la valeur de retour déclarée
-///         ici n'est jamais décodée directement.
+/// @notice ERC-20 subset used by the network. The selectors are used for
+///         SafeToken's low-level calls: the return value declared
+///         here is never decoded directly.
 interface IERC20Min {
     function balanceOf(address account) external view returns (uint256);
     function transfer(address to, uint256 amount) external returns (bool);
     function transferFrom(address from, address to, uint256 amount) external returns (bool);
 }
 
-/// @title SafeToken — transferts tolérants aux jetons non standard
-/// @notice USDT sur Ethereum ne renvoie aucune valeur sur transfer/transferFrom :
-///         un appel typé `returns (bool)` échouerait au décodage. On appelle
-///         donc en bas niveau et on accepte une réponse vide ou `true`.
+/// @title SafeToken — transfers that tolerate non-standard tokens
+/// @notice USDT on Ethereum returns no value from transfer/transferFrom:
+///         a call typed `returns (bool)` would fail while decoding. So we call
+///         at low level and accept either an empty response or `true`.
 library SafeToken {
     function safeTransfer(IERC20Min token, address to, uint256 value) internal {
         (bool ok, bytes memory data) =

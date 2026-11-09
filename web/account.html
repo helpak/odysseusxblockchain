@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mon compte — AQL Network</title>
+<title>My account — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,12 +17,12 @@
 <main>
   <div class="container">
     <section>
-      <span class="kicker page-kicker">Réseau</span>
-      <h1 class="page-title">Mon compte</h1>
-      <p class="section-sub">Vos AQL, leur valeur au prix du marché, vos revenus de staking et vos
-        gains de minage, au même endroit.</p>
+      <span class="kicker page-kicker">Network</span>
+      <h1 class="page-title">My account</h1>
+      <p class="section-sub">Your AQL, its value at the market price, your staking income and your
+        mining earnings, all in one place.</p>
       <div class="row">
-        <button class="btn primary" id="btn-connect">Connecter mon wallet</button>
+        <button class="btn primary" id="btn-connect">Connect my wallet</button>
         <span class="muted mono" id="account"></span>
       </div>
       <div id="notice" class="banner warn" style="display:none;"></div>
@@ -31,10 +32,10 @@
     <div id="dashboard" style="display:none;">
       <section>
         <div class="grid c4">
-          <div class="card stat"><div class="value" id="d-value">—</div><div class="label">valeur de mes AQL (USDT)</div></div>
-          <div class="card stat"><div class="value" id="d-price">—</div><div class="label">prix de l'AQL (USDT, marché)</div></div>
-          <div class="card stat"><div class="value" id="d-dividends">—</div><div class="label">revenus de staking à encaisser (USDT)</div></div>
-          <div class="card stat"><div class="value" id="d-mining">—</div><div class="label">gains de minage à réclamer</div></div>
+          <div class="card stat"><div class="value" id="d-value">—</div><div class="label">value of my AQL (USDT)</div></div>
+          <div class="card stat"><div class="value" id="d-price">—</div><div class="label">AQL price (USDT, market)</div></div>
+          <div class="card stat"><div class="value" id="d-dividends">—</div><div class="label">staking income to collect (USDT)</div></div>
+          <div class="card stat"><div class="value" id="d-mining">—</div><div class="label">mining earnings to claim</div></div>
         </div>
         <p class="stats-note" id="d-price-note"></p>
       </section>
@@ -42,43 +43,43 @@
       <section>
         <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
           <div class="card">
-            <h3>Mes AQL</h3>
+            <h3>My AQL</h3>
             <table>
-              <tr><td>Dans le wallet</td><td class="num right" id="m-balance">—</td></tr>
-              <tr><td>Stakés</td><td class="num right" id="m-staked">—</td></tr>
-              <tr><td>Palier</td><td class="num right" id="m-tier">—</td></tr>
-              <tr><td>Ma part des 33 %</td><td class="num right" id="m-share">—</td></tr>
-              <tr><td>Déverrouillage</td><td class="num right" id="m-unlock">—</td></tr>
+              <tr><td>In wallet</td><td class="num right" id="m-balance">—</td></tr>
+              <tr><td>Staked</td><td class="num right" id="m-staked">—</td></tr>
+              <tr><td>Tier</td><td class="num right" id="m-tier">—</td></tr>
+              <tr><td>My share of the 33%</td><td class="num right" id="m-share">—</td></tr>
+              <tr><td>Unlocks</td><td class="num right" id="m-unlock">—</td></tr>
             </table>
-            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-rev">Encaisser mes revenus de staking</button></p>
+            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-rev">Collect my staking income</button></p>
           </div>
           <div class="card">
-            <h3>Staker</h3>
-            <label for="stake-amount">Montant (AQL)</label>
+            <h3>Stake</h3>
+            <label for="stake-amount">Amount (AQL)</label>
             <input type="number" id="stake-amount" placeholder="1000" min="0">
-            <label for="stake-tier">Verrouillage</label>
+            <label for="stake-tier">Lock</label>
             <select id="stake-tier">
-              <option value="0">Sans verrou — poids ×1,00</option>
-              <option value="1">90 jours — poids ×1,25</option>
-              <option value="2">180 jours — poids ×1,50</option>
-              <option value="3">365 jours — poids ×2,00</option>
+              <option value="0">No lock — weight ×1.00</option>
+              <option value="1">90 days — weight ×1.25</option>
+              <option value="2">180 days — weight ×1.50</option>
+              <option value="3">365 days — weight ×2.00</option>
             </select>
-            <p class="muted" style="font-size:0.85rem;">Les revenus s'écoulent à la seconde : votre part dépend du
-              temps passé staké et de votre poids. Ajouter à une position exige un palier au moins égal.</p>
-            <button class="btn primary" id="btn-stake">Autoriser et staker</button>
-            <label for="unstake-amount" style="margin-top:18px;">Retirer (AQL)</label>
+            <p class="muted" style="font-size:0.85rem;">Income streams by the second: your share depends on how
+              long you stay staked and on your weight. Adding to a position requires the same tier or higher.</p>
+            <button class="btn primary" id="btn-stake">Approve and stake</button>
+            <label for="unstake-amount" style="margin-top:18px;">Unstake (AQL)</label>
             <input type="number" id="unstake-amount" placeholder="500" min="0">
-            <p style="margin-top:10px;"><button class="btn" id="btn-unstake">Retirer</button></p>
+            <p style="margin-top:10px;"><button class="btn" id="btn-unstake">Unstake</button></p>
           </div>
           <div class="card">
-            <h3>Ce que rapporte ma puissance</h3>
+            <h3>What my hardware earns</h3>
             <table>
-              <tr><td>AQL à réclamer</td><td class="num right" id="r-aql">—</td></tr>
-              <tr><td>USDT à réclamer</td><td class="num right" id="r-usdt">—</td></tr>
-              <tr><td>Époques concernées</td><td class="num right" id="r-epochs">—</td></tr>
-              <tr><td>Points de l'époque en cours</td><td class="num right" id="r-points">—</td></tr>
+              <tr><td>AQL to claim</td><td class="num right" id="r-aql">—</td></tr>
+              <tr><td>USDT to claim</td><td class="num right" id="r-usdt">—</td></tr>
+              <tr><td>Epochs</td><td class="num right" id="r-epochs">—</td></tr>
+              <tr><td>Current epoch points</td><td class="num right" id="r-points">—</td></tr>
             </table>
-            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-mining">Tout réclamer en une transaction</button></p>
+            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-mining">Claim everything in one transaction</button></p>
           </div>
         </div>
       </section>

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-/// @title MockUSDT — imitation fidèle des particularités de l'USDT Ethereum
-/// @notice RÉSERVÉ AUX TESTS / TESTNETS. Reproduit ce qui casse les intégrations
-///         naïves de l'USDT réel :
-///           - 6 décimales ;
-///           - transfer / transferFrom / approve ne renvoient AUCUNE valeur ;
-///           - un frais de transfert optionnel (l'USDT réel en a un, à 0 aujourd'hui).
-///         Mint ouvert à tous : ne JAMAIS déployer en production.
+/// @title MockUSDT — faithful imitation of the quirks of Ethereum USDT
+/// @notice FOR TESTS / TESTNETS ONLY. Reproduces what breaks naive
+///         integrations of the real USDT:
+///           - 6 decimals;
+///           - transfer / transferFrom / approve return NO value;
+///           - an optional transfer fee (the real USDT has one, set to 0 today).
+///         Mint is open to everyone: NEVER deploy to production.
 contract MockUSDT {
     string public constant name = "Mock Tether USD";
     string public constant symbol = "mUSDT";
@@ -55,7 +55,7 @@ contract MockUSDT {
         uint256 fee = (value * feeBps) / 10_000;
         balanceOf[from] -= value;
         balanceOf[to] += value - fee;
-        totalSupply -= fee; // frais brûlé, comme s'il partait chez l'émetteur
+        totalSupply -= fee; // fee burned, as if it went to the issuer
         emit Transfer(from, to, value - fee);
     }
 }

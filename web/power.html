@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Puissance & benchmark — AQL Network</title>
+<title>Network &amp; benchmark — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,43 +17,43 @@
 <main>
   <div class="container">
     <section>
-      <span class="kicker page-kicker">Réseau</span>
-      <h1 class="page-title">Puissance en direct</h1>
-      <p class="section-sub">Ce que le réseau a vraiment sous le capot, mis à jour toutes les 15 secondes.</p>
+      <span class="kicker page-kicker">Network</span>
+      <h1 class="page-title">Live power</h1>
+      <p class="section-sub">What the network really has under the hood, refreshed every 15 seconds.</p>
       <div class="grid c4">
-        <div class="card stat"><div class="value" id="w-serving">—</div><div class="label">mineurs prêts à servir l'IA</div></div>
-        <div class="card stat"><div class="value" id="w-waiting">—</div><div class="label">mineurs disponibles à l'instant</div></div>
-        <div class="card stat"><div class="value" id="w-queue">—</div><div class="label">requêtes en attente</div></div>
-        <div class="card stat"><div class="value" id="w-tokens">—</div><div class="label">tokens servis aujourd'hui</div></div>
-        <div class="card stat"><div class="value" id="w-util">—</div><div class="label">charge de l'époque précédente</div></div>
-        <div class="card stat"><div class="value" id="w-gpu">—</div><div class="label">nœuds de calcul actifs</div></div>
-        <div class="card stat"><div class="value" id="w-storage">—</div><div class="label">nœuds de stockage actifs</div></div>
-        <div class="card stat"><div class="value" id="w-replicated">—</div><div class="label">données répliquées</div></div>
+        <div class="card stat"><div class="value" id="w-serving">—</div><div class="label">miners ready to serve the AI</div></div>
+        <div class="card stat"><div class="value" id="w-waiting">—</div><div class="label">miners available right now</div></div>
+        <div class="card stat"><div class="value" id="w-queue">—</div><div class="label">requests waiting</div></div>
+        <div class="card stat"><div class="value" id="w-tokens">—</div><div class="label">tokens served today</div></div>
+        <div class="card stat"><div class="value" id="w-util">—</div><div class="label">previous epoch load</div></div>
+        <div class="card stat"><div class="value" id="w-gpu">—</div><div class="label">active compute nodes</div></div>
+        <div class="card stat"><div class="value" id="w-storage">—</div><div class="label">active storage nodes</div></div>
+        <div class="card stat"><div class="value" id="w-replicated">—</div><div class="label">data replicated</div></div>
       </div>
       <p class="stats-note" id="w-note"></p>
     </section>
 
     <section>
-      <h2>Benchmark toutes les <span id="b-hours">2</span> heures</h2>
+      <h2>Benchmark every <span id="b-hours">2</span> hours</h2>
       <p class="section-sub" id="b-method"></p>
       <div class="row" style="margin-bottom:14px;">
-        <span class="pill" id="b-next">prochain passage : —</span>
-        <span class="pill" id="b-refs">modèles de référence : —</span>
+        <span class="pill" id="b-next">next run: —</span>
+        <span class="pill" id="b-refs">reference models: —</span>
       </div>
       <table>
-        <thead><tr><th>Passage</th><th>Cible</th><th>Modèle</th><th class="right">Score</th><th>Remarque</th></tr></thead>
+        <thead><tr><th>Run</th><th>Target</th><th>Model</th><th class="right">Score</th><th>Note</th></tr></thead>
         <tbody id="b-history"></tbody>
       </table>
-      <p class="muted" style="font-size:0.88rem; margin-top:10px;">Même test pour tous : les questions
-        sont générées à partir d'une graine publique et corrigées automatiquement. Aucune jauge
-        « % de tel modèle » : seuls les scores mesurés sont affichés.</p>
+      <p class="muted" style="font-size:0.88rem; margin-top:10px;">Same test for everyone: the questions
+        are generated from a public seed and graded automatically. No "% of model X" gauge: only
+        measured scores are shown.</p>
     </section>
 
     <section>
-      <h2>Auto-amélioration</h2>
+      <h2>Self-improvement</h2>
       <p class="section-sub" id="e-rule"></p>
       <table>
-        <thead><tr><th>Candidat</th><th>Statut</th><th>Mesures (actuel → candidat)</th></tr></thead>
+        <thead><tr><th>Candidate</th><th>Status</th><th>Measurements (current → candidate)</th></tr></thead>
         <tbody id="e-candidates"></tbody>
       </table>
     </section>

@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Tarifs — AQL Network</title>
+<title>Pricing — AQL Network</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <meta name="theme-color" content="#05060a">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="assets/style.css">
 </head>
 <body>
@@ -16,41 +17,40 @@
 <main>
   <div class="container">
     <section>
-      <span class="kicker page-kicker">Produit</span>
-      <h1 class="page-title">Tarifs</h1>
-      <p class="section-sub">Personne ne fixe le prix : il s'ajuste tout seul à chaque époque selon
-        la charge du réseau. Plus il y a de mineurs, plus il baisse ; plus il y a de demande, plus
-        il monte.</p>
+      <span class="kicker page-kicker">Product</span>
+      <h1 class="page-title">Pricing</h1>
+      <p class="section-sub">Nobody sets the price: it adjusts itself every epoch to the network's
+        load. More miners push it down; more demand pushes it up.</p>
 
       <div class="grid c3">
         <div class="card stat">
           <div class="value" id="p-price">—</div>
-          <div class="label">USDT par million de tokens</div>
+          <div class="label">USDT per million tokens</div>
         </div>
         <div class="card stat">
           <div class="value" id="p-model">—</div>
-          <div class="label">modèle servi</div>
+          <div class="label">model served</div>
         </div>
         <div class="card stat">
           <div class="value" id="p-rpm">—</div>
-          <div class="label">requêtes par minute et par compte</div>
+          <div class="label">requests per minute, per account</div>
         </div>
       </div>
       <p class="muted" id="p-rule" style="margin-top:12px;"></p>
     </section>
 
     <section>
-      <h2>Formules</h2>
-      <p class="section-sub">Du crédit prépayé, sans abonnement caché : vous consommez au token, au prix
-        du moment, jusqu'à épuisement du crédit.</p>
+      <h2>Plans</h2>
+      <p class="section-sub">Prepaid credit, no hidden subscription: you spend it per token, at the
+        current price, until it runs out.</p>
       <div class="grid c3" id="p-plans"></div>
-      <p style="margin-top:16px;"><a class="btn primary" href="pay.html">Ajouter du crédit</a></p>
+      <p style="margin-top:16px;"><a class="btn primary" href="pay.html">Add credit</a></p>
     </section>
 
     <section>
-      <h2>Historique du prix</h2>
+      <h2>Price history</h2>
       <table>
-        <thead><tr><th>Époque</th><th class="right">USDT / million de tokens</th><th class="right">Charge de l'époque précédente</th></tr></thead>
+        <thead><tr><th>Epoch</th><th class="right">USDT / million tokens</th><th class="right">Previous epoch load</th></tr></thead>
         <tbody id="p-history"></tbody>
       </table>
     </section>

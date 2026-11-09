@@ -1,9 +1,9 @@
-"""Comptabilité des époques : points -> wei, halving, règlement merkle.
+"""Epoch accounting: points -> wei, halving, merkle settlement.
 
-Toute la comptabilité est en entiers (milli-points, wei, unités USDT). Le
-règlement d'une époque produit la racine merkle et les totaux que les oracles
-votent on-chain (contracts/scripts/oracle-daemon.js -> AQLNetwork.proposeEpoch),
-plus les preuves merkle que chaque mineur utilise pour réclamer ses gains.
+All accounting is done in integers (milli-points, wei, USDT units). Settling
+an epoch produces the merkle root and the totals that the oracles vote on
+on-chain (contracts/scripts/oracle-daemon.js -> AQLNetwork.proposeEpoch),
+plus the merkle proofs each miner uses to claim their earnings.
 """
 
 from __future__ import annotations
@@ -16,7 +16,7 @@ import db
 import merkle
 import settings
 
-_GENESIS_TS = 0  # figé par init_genesis() au démarrage
+_GENESIS_TS = 0  # frozen by init_genesis() at startup
 
 
 def init_genesis(genesis_ts: int) -> None:
@@ -41,7 +41,7 @@ def epoch_bounds(epoch_id: int) -> tuple[int, int]:
 
 
 def epoch_reward_wei(epoch_id: int) -> int:
-    """Miroir exact de AQLNetwork.epochReward."""
+    """Exact mirror of AQLNetwork.epochReward."""
     halvings = epoch_id // settings.HALVING_INTERVAL
     if halvings >= 64:
         return 0
@@ -52,9 +52,9 @@ def next_halving_epoch(epoch_id: int) -> int:
     return ((epoch_id // settings.HALVING_INTERVAL) + 1) * settings.HALVING_INTERVAL
 
 
-# Travail de calcul payé en AQL (émission). Unité commune : le token de travail utile.
+# Compute work paid in AQL (emission). Common unit: the token of useful work.
 GPU_KINDS = ("serve", "verify", "bench", "improve", "measure", "promotion_bonus")
-# Seul le service de l'IA aux utilisateurs (et ses contrôles) se partage l'USDT payé.
+# Only serving the AI to users (and its checks) shares the USDT paid.
 USDT_KINDS = ("serve", "verify")
 STORAGE_KINDS = ("store", "challenge")
 
@@ -75,7 +75,7 @@ def _points_by_wallet(conn, epoch_id: int, kinds: tuple[str, ...]) -> dict[str, 
 
 
 def _allocate(pool_wei: int, points: dict[str, int]) -> dict[str, int]:
-    """Répartit un pool au prorata des points, en arithmétique entière (plancher)."""
+    """Splits a pool pro rata to points, using integer arithmetic (floor)."""
     total = sum(points.values())
     if total <= 0 or pool_wei <= 0:
         return {}
@@ -87,34 +87,34 @@ def _allocate(pool_wei: int, points: dict[str, int]) -> dict[str, int]:
 
 
 def settle_epoch(epoch_id: int, usdt_pool: int = 0) -> dict:
-    """Règle une époque terminée : agrège les points, répartit la récompense AQL
-    et `usdt_pool` (USDT du pool mineurs disponible on-chain, fourni par
-    l'oracle), construit l'arbre merkle et écrit settlements/epoch_<id>.json."""
+    """Settles a finished epoch: aggregates the points, splits the AQL reward
+    and `usdt_pool` (miner-pool USDT available on-chain, provided by the
+    oracle), builds the merkle tree and writes settlements/epoch_<id>.json."""
     if usdt_pool < 0:
-        raise ValueError("usdt_pool négatif")
+        raise ValueError("usdt_pool is negative")
     now = int(time.time())
     if epoch_id >= current_epoch(now):
         raise ValueError(
-            f"l'époque {epoch_id} n'est pas terminée (époque courante: {current_epoch(now)})"
+            f"epoch {epoch_id} is not finished (current epoch: {current_epoch(now)})"
         )
 
     with db.read() as conn:
         if conn.execute("SELECT 1 FROM epochs WHERE id = ?", (epoch_id,)).fetchone():
-            raise ValueError(f"époque {epoch_id} déjà réglée")
+            raise ValueError(f"epoch {epoch_id} already settled")
         gpu_points = _points_by_wallet(conn, epoch_id, GPU_KINDS)
         storage_points = _points_by_wallet(conn, epoch_id, STORAGE_KINDS)
         usdt_points = _points_by_wallet(conn, epoch_id, USDT_KINDS)
 
     reward = epoch_reward_wei(epoch_id)
     if reward <= 0:
-        raise ValueError(f"émission terminée : récompense nulle pour l'époque {epoch_id}")
+        raise ValueError(f"emission finished: zero reward for epoch {epoch_id}")
     if not gpu_points and not storage_points:
-        raise ValueError(f"aucune activité sur l'époque {epoch_id} : rien à régler")
+        raise ValueError(f"no activity in epoch {epoch_id}: nothing to settle")
 
     gpu_pool = (reward * settings.GPU_POOL_BPS) // 10_000
     storage_pool = reward - gpu_pool
-    # Bootstrap : si un pool n'a aucune activité, sa part bascule sur l'autre,
-    # pour que les premiers contributeurs soient payés.
+    # Bootstrap: if a pool has no activity, its share moves to the other one,
+    # so that the first contributors get paid.
     if not gpu_points:
         storage_pool += gpu_pool
         gpu_pool = 0
@@ -127,12 +127,12 @@ def settle_epoch(epoch_id: int, usdt_pool: int = 0) -> dict:
         aql_payouts[wallet] = aql_payouts.get(wallet, 0) + amount
     for wallet, amount in _allocate(storage_pool, storage_points).items():
         aql_payouts[wallet] = aql_payouts.get(wallet, 0) + amount
-    # Sans service payé pendant l'époque, l'USDT reste dans le pool on-chain
-    # pour les époques suivantes.
+    # With no paid service during the epoch, the USDT stays in the on-chain pool
+    # for the following epochs.
     usdt_payouts = _allocate(usdt_pool, usdt_points)
     wallets = sorted(set(aql_payouts) | set(usdt_payouts))
     if not wallets:
-        raise ValueError(f"aucun payout calculable pour l'époque {epoch_id}")
+        raise ValueError(f"no computable payout for epoch {epoch_id}")
 
     tree = merkle.build_payout_tree(
         epoch_id,
@@ -157,7 +157,7 @@ def settle_epoch(epoch_id: int, usdt_pool: int = 0) -> dict:
 
     with db.write() as conn:
         if conn.execute("SELECT 1 FROM epochs WHERE id = ?", (epoch_id,)).fetchone():
-            raise ValueError(f"époque {epoch_id} déjà réglée")
+            raise ValueError(f"epoch {epoch_id} already settled")
         conn.execute(
             "INSERT INTO epochs (id, settled_at, merkle_root, reward_wei, gpu_points,"
             " storage_points, settlement) VALUES (?, ?, ?, ?, ?, ?, ?)",
@@ -180,7 +180,7 @@ def settle_epoch(epoch_id: int, usdt_pool: int = 0) -> dict:
 
 
 def wallet_rewards(wallet: str) -> dict:
-    """Points en cours + claims réglés (avec preuves merkle) pour un wallet."""
+    """Pending points + settled claims (with merkle proofs) for a wallet."""
     wallet = merkle.normalize_address(wallet)
     epoch = current_epoch()
     out: dict = {"wallet": wallet, "current_epoch": epoch, "pending_points": {}, "claims": []}
@@ -211,7 +211,7 @@ def wallet_rewards(wallet: str) -> dict:
                             "aql_wei": claim["aql"],
                             "usdt": claim["usdt"],
                             "proof": claim["proof"],
-                            "note": "statut réclamé/non réclamé visible on-chain (AQLNetwork.isClaimed)",
+                            "note": "claimed/unclaimed status is visible on-chain (AQLNetwork.isClaimed)",
                         }
                     )
     return out

@@ -1,4 +1,4 @@
-// Puissance en direct, benchmark public et auto-amélioration.
+// Live power, public benchmark and self-improvement.
 (function () {
   "use strict";
   const { api, $, setText, num, duration } = window.AQL;
@@ -21,13 +21,13 @@
       setText("w-waiting", s.network.nodes_waiting_now);
       setText("w-queue", s.network.queue_length);
       setText("w-tokens", num(s.ai.tokens_served_this_epoch, 0));
-      setText("w-util", s.ai.previous_epoch_utilization_pct === null ? "—" : `${num(s.ai.previous_epoch_utilization_pct, 1)} %`);
+      setText("w-util", s.ai.previous_epoch_utilization_pct === null ? "—" : `${num(s.ai.previous_epoch_utilization_pct, 1)}%`);
       setText("w-gpu", s.network.gpu_nodes_active);
       setText("w-storage", s.network.storage_nodes_active);
-      setText("w-replicated", `${num(s.storage.replicated_bytes / 1024 ** 3, 2)} Go`);
-      setText("w-note", `Modèle servi : ${s.ai.model}.`);
+      setText("w-replicated", `${num(s.storage.replicated_bytes / 1024 ** 3, 2)} GB`);
+      setText("w-note", `Model served: ${s.ai.model}.`);
     } catch {
-      setText("w-note", "Coordinateur injoignable — statistiques indisponibles pour le moment.");
+      setText("w-note", "Coordinator unreachable — statistics unavailable for now.");
     }
   }
 
@@ -36,38 +36,38 @@
       const b = await api("/api/benchmark");
       setText("b-hours", num(b.interval_hours, 1));
       setText("b-method", b.method);
-      setText("b-refs", `modèles de référence : ${b.references.length ? b.references.join(", ") : "aucun configuré"}`);
+      setText("b-refs", `reference models: ${b.references.length ? b.references.join(", ") : "none configured"}`);
       const last = b.history[0];
       if (last) {
         const next = last.started_at + b.interval_hours * 3600 - Date.now() / 1000;
-        setText("b-next", `prochain passage dans : ${next > 0 ? duration(next) : "imminent"}`);
+        setText("b-next", `next run in: ${next > 0 ? duration(next) : "imminent"}`);
       }
       const body = $("b-history");
       body.textContent = "";
       for (const r of b.history) {
-        const when = new Date(r.started_at * 1000).toLocaleString("fr-FR");
-        const score = r.correct === null ? "—" : `${r.correct}/${r.total} (${r.score_pct} %)`;
-        body.appendChild(row([[when], [r.target === "network" ? "Réseau AQL" : r.target], [r.model], [score, true], [r.note || ""]]));
+        const when = AQL.date(r.started_at);
+        const score = r.correct === null ? "—" : `${r.correct}/${r.total} (${r.score_pct}%)`;
+        body.appendChild(row([[when], [r.target === "network" ? "AQL network" : r.target], [r.model], [score, true], [r.note || ""]]));
       }
-      if (!b.history.length) body.appendChild(row([["Aucun passage pour l'instant."], [""], [""], [""], [""]]));
+      if (!b.history.length) body.appendChild(row([["No run yet."], [""], [""], [""], [""]]));
     } catch {
-      setText("b-method", "Coordinateur injoignable — benchmark indisponible pour le moment.");
+      setText("b-method", "Coordinator unreachable — benchmark unavailable for now.");
     }
   }
 
   async function refreshEvolution() {
     try {
       const e = await api("/api/evolution");
-      setText("e-rule", `${e.rule} Prompt actif : ${e.active_prompt.id || "par défaut"}.`);
+      setText("e-rule", `${e.rule} Active prompt: ${e.active_prompt.id || "default"}.`);
       const body = $("e-candidates");
       body.textContent = "";
-      const labels = { measuring: "en mesure", promoted: "adopté", rejected: "rejeté", superseded: "dépassé" };
+      const labels = { measuring: "measuring", promoted: "adopted", rejected: "rejected", superseded: "superseded" };
       for (const c of e.candidates) {
         const ms = c.measurements.map((m) => `${m.baseline} → ${m.candidate} / ${m.total}`).join(" · ") || "—";
         body.appendChild(row([[c.id], [labels[c.status] || c.status], [ms]]));
       }
-      if (!e.candidates.length) body.appendChild(row([["Aucun candidat pour l'instant."], [""], [""]]));
-    } catch { /* déjà signalé par les autres blocs */ }
+      if (!e.candidates.length) body.appendChild(row([["No candidate yet."], [""], [""]]));
+    } catch { /* already reported by the other sections */ }
   }
 
   refreshPower();

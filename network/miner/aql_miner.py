@@ -1,27 +1,27 @@
 #!/usr/bin/env python3
-"""Mineur AQL — un seul fichier, zéro dépendance (Python 3.10+).
+"""AQL miner — a single file, zero dependencies (Python 3.10+).
 
-Vous donnez votre wallet, vous choisissez ce que vous fournissez, et vos gains
-(AQL émis + USDT payé par les utilisateurs) s'accumulent à chaque époque.
+You give your wallet, you choose what you provide, and your earnings
+(newly issued AQL + USDT paid by users) accumulate every epoch.
 
-  Calcul (GPU) — votre machine fait tourner le modèle du réseau et :
-    - SERT les utilisateurs de l'IA (payé en USDT + AQL) ;
-    - CONTRÔLE les réponses d'autres mineurs (contrôles aléatoires) ;
-    - AMÉLIORE l'IA (propose de meilleurs prompts) et MESURE les propositions.
-  Il faut un serveur de modèle local compatible OpenAI (Ollama, vLLM,
-  llama.cpp) qui sert le modèle du réseau (affiché au démarrage) :
+  Compute (GPU) — your machine runs the network's model and:
+    - SERVES the AI's users (paid in USDT + AQL);
+    - CHECKS other miners' answers (random spot checks);
+    - IMPROVES the AI (proposes better prompts) and MEASURES the proposals.
+  You need a local OpenAI-compatible model server (Ollama, vLLM,
+  llama.cpp) that serves the network's model (shown at startup):
 
-      python3 aql_miner.py --wallet 0xVOTRE_WALLET --mode gpu \\
+      python3 aql_miner.py --wallet 0xYOUR_WALLET --mode gpu \\
           --model-endpoint http://localhost:11434/v1
 
-  Stockage — votre disque héberge des données chiffrées du réseau, payé à
-  chaque preuve de stockage :
+  Storage — your disk hosts encrypted network data, paid for
+  each proof of storage:
 
-      python3 aql_miner.py --wallet 0xVOTRE_WALLET --mode storage \\
+      python3 aql_miner.py --wallet 0xYOUR_WALLET --mode storage \\
           --allocate-gb 100 --storage-path ./aql_storage
 
-Options : --coordinator URL, --model (défaut : modèle du réseau), --name,
---max-jobs N (0 = infini), --state-file. L'identité du nœud est persistée.
+Options: --coordinator URL, --model (default: the network's model), --name,
+--max-jobs N (0 = unlimited), --state-file. The node identity is persisted.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ def log(message: str) -> None:
     print(f"[{time.strftime('%H:%M:%S')}] {message}", flush=True)
 
 
-# ---------------------------------------------------------------- coordinateur
+# ---------------------------------------------------------------- coordinator
 
 
 class CoordinatorApi:
@@ -91,12 +91,12 @@ class CoordinatorApi:
             self.node_id, self.node_token = entry["node_id"], entry["node_token"]
             try:
                 self.request("POST", "/api/nodes/heartbeat", {})
-                log(f"Nœud existant repris : {self.node_id}")
+                log(f"Resumed existing node: {self.node_id}")
                 return
             except urllib.error.HTTPError as exc:
                 if exc.code != 401:
                     raise
-                log("Identité inconnue du coordinateur, ré-enregistrement…")
+                log("Identity unknown to the coordinator, registering again…")
 
         out = self.request(
             "POST",
@@ -128,7 +128,7 @@ class CoordinatorApi:
                 try:
                     self.request("POST", "/api/nodes/heartbeat", {})
                 except Exception:
-                    pass  # le prochain appel de job re-signalera l'activité
+                    pass  # the next job call will report activity again
 
         threading.Thread(target=loop, daemon=True).start()
 
@@ -139,7 +139,7 @@ class CoordinatorApi:
         return self.request("POST", "/api/jobs/submit", {"job_id": job_id, "result": result})
 
 
-# ---------------------------------------------------------------- modèle local
+# ---------------------------------------------------------------- local model
 
 
 def chat(args, messages: list[dict], max_tokens: int = 1024, temperature: float = 0.0) -> str:
@@ -163,7 +163,7 @@ def chat(args, messages: list[dict], max_tokens: int = 1024, temperature: float 
 
 
 def run_serve(payload: dict, args) -> dict:
-    """serve / verify / bench : même travail, répondre avec le modèle du réseau."""
+    """serve / verify / bench: same work, answer with the network's model."""
     content = chat(args, payload["messages"], int(payload["max_tokens"]), float(payload["temperature"]))
     return {"content": content}
 
@@ -176,8 +176,8 @@ def run_improve(payload: dict, args) -> dict:
             {"role": "system", "content": payload["instructions"]},
             {
                 "role": "user",
-                "content": f"PROMPT SYSTÈME ACTUEL :\n{payload['current_prompt']}\n\n"
-                           f"EXEMPLES DE TÂCHES :\n{examples}\n\nNOUVEAU PROMPT SYSTÈME :",
+                "content": f"CURRENT SYSTEM PROMPT:\n{payload['current_prompt']}\n\n"
+                           f"TASK EXAMPLES:\n{examples}\n\nNEW SYSTEM PROMPT:",
             },
         ],
         max_tokens=1200,
@@ -187,8 +187,8 @@ def run_improve(payload: dict, args) -> dict:
 
 
 def run_measure(payload: dict, args) -> dict:
-    """Répond à chaque tâche avec le prompt actuel puis avec le candidat. Le
-    coordinateur corrige lui-même : on renvoie les réponses brutes."""
+    """Answers each task with the current prompt, then with the candidate. The
+    coordinator grades them itself: we send back the raw answers."""
     out = {"baseline": {}, "candidate": {}}
     for task in payload["tasks"]:
         for label, prompt in (("baseline", payload["baseline_prompt"]), ("candidate", payload["candidate_prompt"])):
@@ -201,12 +201,12 @@ def run_measure(payload: dict, args) -> dict:
     return out
 
 
-# ---------------------------------------------------------------- stockage
+# ---------------------------------------------------------------- storage
 
 
 def chunk_path(storage_dir: str, chunk_id: str) -> str:
     if not re.fullmatch(r"[0-9a-f]{8,64}", chunk_id):
-        raise ValueError(f"chunk_id invalide: {chunk_id!r}")
+        raise ValueError(f"invalid chunk_id: {chunk_id!r}")
     return os.path.join(storage_dir, f"chunk_{chunk_id}.bin")
 
 
@@ -214,10 +214,10 @@ def run_store(payload: dict, storage_dir: str) -> dict:
     data = base64.b64decode(payload["data_b64"])
     digest = hashlib.sha256(data).hexdigest()
     if digest != payload["sha256"]:
-        raise ValueError("intégrité : sha256 reçu != annoncé")
+        raise ValueError("integrity: received sha256 != announced sha256")
     with open(chunk_path(storage_dir, payload["chunk_id"]), "wb") as fh:
         fh.write(data)
-    log(f"  store : chunk {payload['chunk_id'][:8]}… ({len(data)} octets) écrit")
+    log(f"  store: chunk {payload['chunk_id'][:8]}… ({len(data)} bytes) written")
     return {"sha256": digest}
 
 
@@ -226,11 +226,11 @@ def run_challenge(payload: dict, storage_dir: str) -> dict:
         fh.seek(int(payload["offset"]))
         slice_ = fh.read(int(payload["length"]))
     digest = hashlib.sha256(bytes.fromhex(payload["nonce"]) + slice_).hexdigest()
-    log(f"  challenge : chunk {payload['chunk_id'][:8]}… offset {payload['offset']}")
+    log(f"  challenge: chunk {payload['chunk_id'][:8]}… offset {payload['offset']}")
     return {"digest": digest}
 
 
-# ---------------------------------------------------------------- matériel
+# ---------------------------------------------------------------- hardware
 
 
 def detect_gpu() -> str:
@@ -242,44 +242,44 @@ def detect_gpu() -> str:
                 return out.stdout.strip().splitlines()[0]
         except (OSError, subprocess.TimeoutExpired):
             continue
-    return "aucun GPU détecté (le modèle tournera sur ce que votre serveur local utilise)"
+    return "no GPU detected (the model will run on whatever your local server uses)"
 
 
-# ---------------------------------------------------------------- boucle principale
+# ---------------------------------------------------------------- main loop
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Mineur AQL — fournissez du calcul ou du stockage, recevez des AQL et des USDT.",
+        description="AQL miner — provide compute or storage, earn AQL and USDT.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog=__doc__.split("Options :")[0],
+        epilog=__doc__.split("Options:")[0],
     )
-    parser.add_argument("--wallet", required=True, help="votre adresse EVM (0x…), reçoit les gains")
+    parser.add_argument("--wallet", required=True, help="your EVM address (0x…), receives the earnings")
     parser.add_argument("--mode", required=True, choices=["gpu", "storage"])
     parser.add_argument("--coordinator", default=os.getenv("COORDINATOR_URL", DEFAULT_COORDINATOR))
-    parser.add_argument("--name", default="", help="nom d'affichage du nœud")
+    parser.add_argument("--name", default="", help="display name of the node")
     parser.add_argument("--model-endpoint", default=os.getenv("MODEL_ENDPOINT", ""),
-                        help="serveur de modèle local compatible OpenAI (requis en mode gpu)")
+                        help="local OpenAI-compatible model server (required in gpu mode)")
     parser.add_argument("--model", default=os.getenv("MODEL_NAME", ""),
-                        help="nom du modèle chez votre serveur local (défaut : modèle du réseau)")
+                        help="model name on your local server (default: the network's model)")
     parser.add_argument("--model-key", default=os.getenv("MODEL_API_KEY", ""))
-    parser.add_argument("--allocate-gb", type=float, default=0.0, help="espace alloué (mode storage)")
+    parser.add_argument("--allocate-gb", type=float, default=0.0, help="allocated space (storage mode)")
     parser.add_argument("--storage-path", default="./aql_storage")
-    parser.add_argument("--max-jobs", type=int, default=0, help="s'arrêter après N jobs (0 = infini)")
+    parser.add_argument("--max-jobs", type=int, default=0, help="stop after N jobs (0 = unlimited)")
     parser.add_argument("--state-file", default=os.path.expanduser("~/.aql/miner_state.json"))
     args = parser.parse_args()
 
     if not WALLET_RE.match(args.wallet):
-        parser.error("--wallet doit être une adresse EVM 0x + 40 caractères hexadécimaux")
+        parser.error("--wallet must be an EVM address: 0x + 40 hexadecimal characters")
     if args.mode == "gpu" and not args.model_endpoint:
-        parser.error("--model-endpoint est requis en mode gpu : le réseau paie le travail de VOTRE modèle")
+        parser.error("--model-endpoint is required in gpu mode: the network pays for the work of YOUR model")
     if args.mode == "storage":
         if args.allocate_gb <= 0:
-            parser.error("--allocate-gb est requis en mode storage")
+            parser.error("--allocate-gb is required in storage mode")
         os.makedirs(args.storage_path, exist_ok=True)
         free_gb = shutil.disk_usage(args.storage_path).free / 1024**3
         if args.allocate_gb > free_gb:
-            parser.error(f"--allocate-gb {args.allocate_gb} > espace libre ({free_gb:.1f} Go)")
+            parser.error(f"--allocate-gb {args.allocate_gb} > free space ({free_gb:.1f} GB)")
 
     api = CoordinatorApi(args.coordinator, args.state_file)
     if args.mode == "gpu":
@@ -287,18 +287,18 @@ def main() -> int:
         if not args.model:
             args.model = network_model
         elif args.model != network_model:
-            log(f"ATTENTION : le réseau sert « {network_model} », vous déclarez « {args.model} » : "
-                "aucun travail de calcul ne vous sera confié.")
+            log(f"WARNING: the network serves '{network_model}', you declared '{args.model}': "
+                "no compute work will be assigned to you.")
 
     print("=" * 66)
-    print(" AQL Network — mineur")
-    print(f"   coordinateur : {args.coordinator}")
+    print(" AQL Network — miner")
+    print(f"   coordinator  : {args.coordinator}")
     print(f"   wallet       : {args.wallet}")
     print(f"   mode         : {args.mode}"
-          + (f" ({args.allocate_gb} Go -> {args.storage_path})" if args.mode == "storage" else ""))
+          + (f" ({args.allocate_gb} GB -> {args.storage_path})" if args.mode == "storage" else ""))
     if args.mode == "gpu":
         print(f"   GPU          : {detect_gpu()}")
-        print(f"   modèle       : {args.model} via {args.model_endpoint}")
+        print(f"   model        : {args.model} via {args.model_endpoint}")
     print("=" * 66, flush=True)
 
     api.load_or_register(args)
@@ -309,21 +309,21 @@ def main() -> int:
         try:
             out = api.next_job()
         except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError) as exc:
-            log(f"coordinateur injoignable ({exc}), nouvel essai dans 15 s")
+            log(f"coordinator unreachable ({exc}), retrying in 15 s")
             time.sleep(15)
             continue
 
         job = out.get("job")
         if not job:
             if out.get("reason"):
-                log(f"aucun travail : {out['reason']}")
+                log(f"no work: {out['reason']}")
             wait = int(out.get("retry_in", 30))
             if wait:
                 time.sleep(wait)
             continue
 
         kind, payload = job["kind"], job["payload"]
-        log(f"job {job['id'][:8]}… [{kind}] (époque {out.get('epoch')})")
+        log(f"job {job['id'][:8]}… [{kind}] (epoch {out.get('epoch')})")
         try:
             if kind in ("serve", "verify", "bench"):
                 result = run_serve(payload, args)
@@ -336,26 +336,26 @@ def main() -> int:
             elif kind == "challenge":
                 result = run_challenge(payload, args.storage_path)
             else:
-                log(f"  type de job inconnu : {kind} — ignoré")
+                log(f"  unknown job type: {kind} — skipped")
                 result = {}
         except Exception as exc:
-            log(f"  échec local du job : {exc}")
+            log(f"  job failed locally: {exc}")
             result = {"error": str(exc)[:500]}
 
         try:
             receipt = api.submit(job["id"], result)
         except urllib.error.HTTPError as exc:
-            log(f"  soumission refusée : {exc.code} {exc.read().decode(errors='replace')[:200]}")
+            log(f"  submission rejected: {exc.code} {exc.read().decode(errors='replace')[:200]}")
             continue
 
         session_points += int(receipt.get("points", 0))
         jobs_done += 1
         log(
             f"  -> {receipt.get('message', '')} | +{receipt.get('points', 0)} pts "
-            f"(session : {session_points} pts, {jobs_done} jobs, réputation {receipt.get('reputation')})"
+            f"(session: {session_points} pts, {jobs_done} jobs, reputation {receipt.get('reputation')})"
         )
         if args.max_jobs and jobs_done >= args.max_jobs:
-            log(f"--max-jobs atteint ({args.max_jobs}), arrêt. Total session : {session_points} pts")
+            log(f"--max-jobs reached ({args.max_jobs}), stopping. Session total: {session_points} pts")
             return 0
 
 
@@ -363,5 +363,5 @@ if __name__ == "__main__":
     try:
         sys.exit(main())
     except KeyboardInterrupt:
-        print("\nArrêt demandé — à bientôt sur le réseau.")
+        print("\nStop requested — see you soon on the network.")
         sys.exit(0)

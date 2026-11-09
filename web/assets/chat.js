@@ -1,16 +1,16 @@
-// Portail IA : compte (clé locale), crédit, conversation.
+// AI portal: account (key kept locally), credit, conversation.
 (function () {
   "use strict";
   const { api, $, num, errorText } = window.AQL;
   const KEY = "aql_api_key";
   const REF = "aql_account_ref";
   const HISTORY = "aql_history";
-  const MAX_CONTEXT = 20; // derniers messages envoyés au modèle
+  const MAX_CONTEXT = 20; // latest messages sent to the model
 
   const store = {
     get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
-    set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* navigation privée */ } },
-    del: (k) => { try { localStorage.removeItem(k); } catch { /* navigation privée */ } },
+    set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private browsing */ } },
+    del: (k) => { try { localStorage.removeItem(k); } catch { /* private browsing */ } },
   };
   let history = [];
   try { history = JSON.parse(store.get(HISTORY) || "[]"); } catch { history = []; }
@@ -42,7 +42,7 @@
   async function refreshAccount() {
     try {
       const me = await api("/api/accounts/me", { headers: authHeaders() });
-      $("balance").textContent = `crédit : ${num(me.balance_usdt, 4)} USDT`;
+      $("balance").textContent = `credit: ${num(me.balance_usdt, 4)} USDT`;
       $("balance").className = "pill " + (me.balance_usdt > 0 ? "ok" : "warn");
       store.set(REF, me.account_ref);
     } catch (err) {
@@ -51,12 +51,12 @@
         show();
         return;
       }
-      $("balance").textContent = "crédit : indisponible";
+      $("balance").textContent = "credit: unavailable";
     }
     try {
       const p = await api("/api/pricing");
-      $("price").textContent = `${num(p.price_usdt_per_million_tokens, 3)} USDT / million de tokens`;
-    } catch { /* coordinateur injoignable : on garde l'affichage précédent */ }
+      $("price").textContent = `${num(p.price_usdt_per_million_tokens, 3)} USDT / million tokens`;
+    } catch { /* coordinator unreachable: keep the previous value */ }
   }
 
   function show() {
@@ -77,23 +77,23 @@
       const box = $("new-key");
       box.style.display = "";
       box.textContent =
-        `Compte créé. Conservez cette clé, elle ne sera plus affichée : ${acc.api_key} — ` +
-        `elle est aussi gardée dans ce navigateur. Prochaine étape : ajouter du crédit.`;
+        `Account created. Keep this key, it won't be shown again: ${acc.api_key} — ` +
+        `it is also saved in this browser. Next step: add credit.`;
       show();
     } catch (err) {
-      alert("Création impossible : " + errorText(err));
+      alert("Could not create the account: " + errorText(err));
     }
   });
 
   $("btn-use-key").addEventListener("click", () => {
     const key = $("key-input").value.trim();
-    if (!key.startsWith("aql_")) return alert("Une clé AQL commence par aql_");
+    if (!key.startsWith("aql_")) return alert("An AQL key starts with aql_");
     store.set(KEY, key);
     show();
   });
 
   $("btn-logout").addEventListener("click", () => {
-    if (!confirm("Oublier la clé dans ce navigateur ? Gardez-la si vous voulez retrouver votre crédit.")) return;
+    if (!confirm("Forget the key in this browser? Keep a copy if you want to get your credit back.")) return;
     store.del(KEY);
     store.del(REF);
     show();
@@ -112,7 +112,7 @@
     history.push({ role: "user", content: text });
     render();
     $("btn-send").disabled = true;
-    $("status").textContent = "Un mineur traite votre requête…";
+    $("status").textContent = "A miner is processing your request…";
     try {
       const context = history.slice(-MAX_CONTEXT).map(({ role, content }) => ({ role, content }));
       const out = await api("/v1/chat/completions", {
@@ -130,10 +130,10 @@
       history.pop();
       $("prompt").value = text;
       $("status").textContent =
-        err.status === 402 ? "Crédit insuffisant : ajoutez du crédit (page « Ajouter du crédit »)." :
-        err.status === 429 ? "Trop de requêtes en une minute : patientez un instant." :
-        err.status === 504 ? "Aucun mineur n'a répondu à temps (requête non facturée). Réessayez." :
-        "Erreur : " + errorText(err);
+        err.status === 402 ? "Insufficient credit: add credit (\"Add credit\" page)." :
+        err.status === 429 ? "Too many requests in one minute: wait a moment." :
+        err.status === 504 ? "No miner answered in time (request not charged). Try again." :
+        "Error: " + errorText(err);
     } finally {
       save();
       render();
@@ -151,7 +151,7 @@
   });
 
   show();
-  // Un paiement arrive quelques blocs après la transaction : le solde se met à jour seul.
+  // A payment lands a few blocks after the transaction: the balance refreshes on its own.
   setInterval(() => {
     if (store.get(KEY)) refreshAccount();
   }, 10_000);

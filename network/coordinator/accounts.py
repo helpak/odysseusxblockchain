@@ -1,11 +1,11 @@
-"""Comptes utilisateurs de l'IA : clé d'accès, crédit en USDT, limite de débit.
+"""AI user accounts: access key, USDT credit, rate limit.
 
-- L'identifiant de compte (32 octets) sert aussi de référence de paiement :
-  l'utilisateur appelle AQLNetwork.pay(montant, 0x<identifiant>) et le crédit
-  arrive tout seul sur son compte (lecture des événements Paid, cf. chain.py).
-- La clé d'accès n'est stockée que hachée (sha256) : une fuite de la base ne
-  permet pas de consommer le crédit des utilisateurs.
-- Montants en micro-USDT (1 USDT = 1 000 000), comme les 6 décimales de l'USDT.
+- The account ID (32 bytes) also serves as the payment reference:
+  the user calls AQLNetwork.pay(amount, 0x<account_id>) and the credit
+  lands on their account automatically (by reading Paid events, see chain.py).
+- The access key is only stored hashed (sha256): a database leak does not
+  allow anyone to spend users' credit.
+- Amounts in micro-USDT (1 USDT = 1,000,000), matching USDT's 6 decimals.
 """
 
 from __future__ import annotations
@@ -62,7 +62,7 @@ def credit(conn, account_id: str, amount_micro: int) -> bool:
 
 
 def charge(conn, account_id: str, amount_micro: int, tokens: int) -> int:
-    """Débite au plus le solde disponible. Retourne le montant réellement débité."""
+    """Debits at most the available balance. Returns the amount actually debited."""
     row = conn.execute("SELECT balance_micro FROM accounts WHERE id = ?", (account_id,)).fetchone()
     if row is None:
         return 0
@@ -75,12 +75,12 @@ def charge(conn, account_id: str, amount_micro: int, tokens: int) -> int:
     return debit
 
 
-# ---------------------------------------------------------------- réservations & débit
+# ---------------------------------------------------------------- reservations & debit
 
 
 def reserve(account_id: str, balance_micro: int, amount_micro: int) -> bool:
-    """Réserve le coût maximal d'une requête : deux requêtes simultanées ne
-    peuvent pas dépenser deux fois le même crédit."""
+    """Reserves the maximum cost of a request: two concurrent requests
+    cannot spend the same credit twice."""
     with _lock:
         if balance_micro - _reserved[account_id] < amount_micro:
             return False
@@ -94,7 +94,7 @@ def release(account_id: str, amount_micro: int) -> None:
 
 
 def allow_request(account_id: str) -> bool:
-    """Plafond de requêtes par minute et par compte (fenêtre glissante)."""
+    """Cap on requests per minute, per account (sliding window)."""
     now = time.time()
     with _lock:
         window = _recent[account_id]

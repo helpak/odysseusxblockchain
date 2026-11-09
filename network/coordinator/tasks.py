@@ -1,14 +1,13 @@
-"""Tâches de benchmark générées et corrigées automatiquement.
+"""Benchmark tasks, generated and graded automatically.
 
-Chaque série de tâches est fabriquée à partir d'une graine : les nombres
-changent à chaque série, donc les réponses ne peuvent pas être apprises par
-cœur ni glissées dans un prompt. La bonne réponse est calculée ici, par le
-coordinateur : les mineurs ne voient que les questions et renvoient leurs
-réponses brutes, qui sont corrigées côté serveur.
+Every task series is built from a seed: the numbers change with each series,
+so the answers cannot be memorised or slipped into a prompt. The correct
+answer is computed here, by the coordinator: miners only see the questions
+and send back their raw answers, which are graded server-side.
 
-Utilisé pour :
-  - mesurer les améliorations proposées (prompt actuel vs candidat) ;
-  - le benchmark public toutes les 2 h (réseau vs modèles de référence).
+Used for:
+  - measuring proposed improvements (current prompt vs candidate);
+  - the public benchmark every 2 h (network vs reference models).
 """
 
 from __future__ import annotations
@@ -18,15 +17,15 @@ import re
 import unicodedata
 
 ANSWER_INSTRUCTION = (
-    "Réponds à la question. Termine OBLIGATOIREMENT par une dernière ligne au "
-    "format exact : RÉPONSE: <réponse finale>"
+    "Answer the question. You MUST end with a last line in exactly this "
+    "format: ANSWER: <final answer>"
 )
 
-DAYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 WORDS = [
-    "anticonstitutionnellement", "bibliothèque", "extraordinaire", "parallélépipède",
-    "développement", "établissement", "rhinocéros", "kaléidoscope", "abracadabra",
-    "commissariat", "hippopotame", "électricité",
+    "uncharacteristically", "encyclopedia", "extraordinary", "parallelogram",
+    "development", "establishment", "rhinoceros", "kaleidoscope", "abracadabra",
+    "commissioner", "hippopotamus", "electricity",
 ]
 
 
@@ -36,13 +35,13 @@ def _strip_accents(text: str) -> str:
 
 def _task_arith(r: random.Random) -> dict:
     a, b, c, d = r.randint(12, 99), r.randint(3, 19), r.randint(100, 999), r.randint(10, 99)
-    return {"kind": "number", "q": f"Calcule ({a} × {b}) + {c} − {d}.", "a": a * b + c - d}
+    return {"kind": "number", "q": f"Compute ({a} × {b}) + {c} − {d}.", "a": a * b + c - d}
 
 
 def _task_percent(r: random.Random) -> dict:
     p = r.choice([5, 10, 12, 15, 20, 25, 30, 40, 75])
     base = r.randint(4, 60) * 20
-    return {"kind": "number", "q": f"Combien font {p} % de {base} ?", "a": base * p // 100}
+    return {"kind": "number", "q": f"What is {p}% of {base}?", "a": base * p // 100}
 
 
 def _task_train(r: random.Random) -> dict:
@@ -51,7 +50,7 @@ def _task_train(r: random.Random) -> dict:
     duration = f"{h} h" + (f" {m} min" if m else "")
     return {
         "kind": "number",
-        "q": f"Un train roule à vitesse constante de {v} km/h pendant {duration}. Quelle distance parcourt-il, en km ?",
+        "q": f"A train travels at a constant {v} km/h for {duration}. How far does it go, in km?",
         "a": dist,
     }
 
@@ -59,8 +58,8 @@ def _task_train(r: random.Random) -> dict:
 def _task_minutes(r: random.Random) -> dict:
     h = r.randint(1, 9)
     half = r.choice([0, 0.25, 0.5, 0.75])
-    label = f"{h + half}".replace(".", ",").rstrip("0").rstrip(",")
-    return {"kind": "number", "q": f"Combien y a-t-il de minutes dans {label} heures ?", "a": int((h + half) * 60)}
+    label = f"{h + half}".rstrip("0").rstrip(".")
+    return {"kind": "number", "q": f"How many minutes are there in {label} hours?", "a": int((h + half) * 60)}
 
 
 def _task_sequence(r: random.Random) -> dict:
@@ -68,7 +67,7 @@ def _task_sequence(r: random.Random) -> dict:
     seq = [start * ratio**i for i in range(n)]
     return {
         "kind": "number",
-        "q": f"Quel est le nombre suivant dans la suite : {', '.join(map(str, seq))}, ?",
+        "q": f"What is the next number in the sequence: {', '.join(map(str, seq))}, ?",
         "a": start * ratio**n,
     }
 
@@ -77,7 +76,7 @@ def _task_sort(r: random.Random) -> dict:
     nums = r.sample(range(1, 200), 6)
     return {
         "kind": "list",
-        "q": f"Range ces nombres dans l'ordre croissant : {', '.join(map(str, nums))}.",
+        "q": f"Sort these numbers in ascending order: {', '.join(map(str, nums))}.",
         "a": sorted(nums),
     }
 
@@ -86,25 +85,25 @@ def _task_weekday(r: random.Random) -> dict:
     start, delta = r.randrange(7), r.randint(3, 40)
     return {
         "kind": "word",
-        "q": f"Si aujourd'hui est {DAYS[start]}, quel jour de la semaine serons-nous dans {delta} jours ?",
+        "q": f"If today is {DAYS[start]}, what day of the week will it be in {delta} days?",
         "a": DAYS[(start + delta) % 7],
     }
 
 
 def _task_letters(r: random.Random) -> dict:
     word = r.choice(WORDS)
-    letter = r.choice(sorted(set(_strip_accents(word)) - {"-"}))
-    count = _strip_accents(word).count(letter)
+    letter = r.choice(sorted(set(word)))
+    count = word.count(letter)
     return {
         "kind": "number",
-        "q": f"Combien de fois la lettre « {letter} » apparaît-elle dans le mot « {word} » (accents ignorés) ?",
+        "q": f'How many times does the letter "{letter}" appear in the word "{word}"?',
         "a": count,
     }
 
 
 def _task_equation(r: random.Random) -> dict:
     x, a, b = r.randint(2, 30), r.randint(2, 12), r.randint(1, 50)
-    return {"kind": "number", "q": f"Résous : {a}x + {b} = {a * x + b}. Que vaut x ?", "a": x}
+    return {"kind": "number", "q": f"Solve: {a}x + {b} = {a * x + b}. What is x?", "a": x}
 
 
 GENERATORS = [
@@ -114,7 +113,7 @@ GENERATORS = [
 
 
 def generate(seed: int, count: int) -> list[dict]:
-    """Série déterministe : même graine => mêmes questions et réponses."""
+    """Deterministic series: same seed => same questions and answers."""
     r = random.Random(seed)
     tasks = []
     for i in range(count):
@@ -127,21 +126,22 @@ def generate(seed: int, count: int) -> list[dict]:
 
 
 def public_view(tasks: list[dict]) -> list[dict]:
-    """Ce que voient les mineurs : jamais la réponse."""
+    """What miners see: never the answer."""
     return [{"id": t["id"], "prompt": t["prompt"]} for t in tasks]
 
 
 def _final_line(answer: str) -> str:
     text = str(answer or "")
-    matches = re.findall(r"R[ÉE]PONSE\s*:\s*(.+)", text, flags=re.IGNORECASE)
+    matches = re.findall(r"ANSWER\s*:\s*(.+)", text, flags=re.IGNORECASE)
     if matches:
         return matches[-1].strip()
     lines = [line.strip() for line in text.strip().splitlines() if line.strip()]
     return lines[-1] if lines else ""
 
 
-def _numbers(text: str) -> list[int]:
-    cleaned = re.sub(r"(?<=\d)[   ](?=\d{3}\b)", "", text)  # 1 000 -> 1000
+def _numbers(text: str, thousands: bool = True) -> list[int]:
+    # 1,000 / 1 000 -> 1000. Not for lists, where "12,150" means two numbers.
+    cleaned = re.sub(r"(?<=\d)[,   ](?=\d{3}\b)", "", text) if thousands else text
     return [int(n) for n in re.findall(r"-?\d+", cleaned)]
 
 
@@ -151,13 +151,13 @@ def is_correct(task: dict, answer: str) -> bool:
         nums = _numbers(final)
         return bool(nums) and nums[-1] == int(task["a"])
     if task["kind"] == "list":
-        return _numbers(final) == list(task["a"])
+        return _numbers(final, thousands=False) == list(task["a"])
     if task["kind"] == "word":
         return _strip_accents(task["a"]).lower() in _strip_accents(final).lower()
     return False
 
 
 def score(tasks: list[dict], answers: dict) -> int:
-    """answers : {task_id (str|int): réponse brute}. Retourne le nombre de bonnes réponses."""
+    """answers: {task_id (str|int): raw answer}. Returns the number of correct answers."""
     by_id = {str(k): v for k, v in (answers or {}).items()}
     return sum(1 for t in tasks if is_correct(t, by_id.get(str(t["id"]), "")))

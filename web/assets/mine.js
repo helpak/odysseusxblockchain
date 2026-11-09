@@ -1,10 +1,10 @@
-// Portail minage : génère la commande exacte du mineur.
+// Mining portal: builds the exact miner command.
 (function () {
   "use strict";
   const { cfg, api, $ } = window.AQL;
   const WALLET_RE = /^0x[0-9a-fA-F]{40}$/;
   let mode = "gpu";
-  let networkModel = "<modèle du réseau>";
+  let networkModel = "<network model>";
 
   function select(m) {
     mode = m;
@@ -22,13 +22,13 @@
     if (!wallet) {
       status.textContent = "";
     } else if (valid) {
-      status.textContent = "Adresse valide : vos gains arriveront sur ce wallet.";
+      status.textContent = "Valid address: your earnings will be sent to this wallet.";
       status.style.color = "var(--ok)";
     } else {
-      status.textContent = "Adresse invalide : format attendu 0x + 40 caractères hexadécimaux.";
+      status.textContent = "Invalid address: expected 0x + 40 hexadecimal characters.";
       status.style.color = "var(--danger)";
     }
-    const w = valid ? wallet : "0xVOTRE_WALLET";
+    const w = valid ? wallet : "0xYOUR_WALLET";
     const lines = ["python3 aql_miner.py \\", `    --wallet ${w} \\`];
     if (mode === "gpu") {
       lines.push("    --mode gpu \\");
@@ -48,8 +48,8 @@
   ["wallet", "model-endpoint", "allocate-gb", "storage-path"].forEach((id) => $(id).addEventListener("input", render));
   $("btn-copy").addEventListener("click", () => {
     navigator.clipboard.writeText($("command").textContent).then(() => {
-      $("btn-copy").textContent = "Copié ✓";
-      setTimeout(() => ($("btn-copy").textContent = "Copier la commande"), 1500);
+      $("btn-copy").textContent = "Copied ✓";
+      setTimeout(() => ($("btn-copy").textContent = "Copy command"), 1500);
     });
   });
 
@@ -58,7 +58,7 @@
     $("net-model").textContent = networkModel;
     render();
   }).catch(() => {
-    $("net-model").textContent = "le modèle du réseau, affiché au démarrage du mineur";
+    $("net-model").textContent = "the network model, shown when the miner starts";
   });
   render();
 })();

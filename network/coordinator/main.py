@@ -1,17 +1,17 @@
-"""Coordinateur du réseau AQL — API FastAPI.
+"""AQL network coordinator — FastAPI API.
 
-Rôles :
-  - IA : comptes utilisateurs (clé + crédit USDT), API compatible OpenAI
-    (/v1/chat/completions) servie par les mineurs, prix automatique selon la charge ;
-  - crédits : lecture des paiements on-chain (AQLNetwork.pay) et crédit automatique ;
-  - mineurs : registre des nœuds, distribution et vérification des jobs
-    (serve, verify, bench, improve, measure, store, challenge), réputation ;
-  - amélioration : prompts candidats mesurés au benchmark, promotion automatique ;
-  - benchmark public toutes les 2 h, réseau vs modèles de référence ;
-  - époques : points -> AQL (halving) + USDT du pool mineurs, arbre merkle voté
-    on-chain par les oracles (contracts/scripts/oracle-daemon.js).
+Roles:
+  - AI: user accounts (key + USDT credit), OpenAI-compatible API
+    (/v1/chat/completions) served by the miners, automatic load-based pricing;
+  - credits: reads on-chain payments (AQLNetwork.pay) and credits accounts automatically;
+  - miners: node registry, job dispatch and verification
+    (serve, verify, bench, improve, measure, store, challenge), reputation;
+  - improvement: candidate prompts measured on the benchmark, automatic promotion;
+  - public benchmark every 2 h, network vs reference models;
+  - epochs: points -> AQL (halving) + USDT from the miner pool, merkle tree voted
+    on-chain by the oracles (contracts/scripts/oracle-daemon.js).
 
-Démarrage :  uvicorn main:app --host 0.0.0.0 --port 9000   (un seul worker)
+Start:  uvicorn main:app --host 0.0.0.0 --port 9000   (a single worker)
 """
 
 from __future__ import annotations
@@ -48,8 +48,8 @@ ADMIN_TOKEN = _boot["admin_token"]
 if _boot["admin_token_generated"]:
     print(
         "\n=== AQL Coordinator ===\n"
-        f"Jeton admin généré (persisté en base) : {ADMIN_TOKEN}\n"
-        "Utilisez-le dans l'en-tête X-Admin-Token pour les routes /api/admin/*.\n",
+        f"Admin token generated (stored in the database): {ADMIN_TOKEN}\n"
+        "Use it in the X-Admin-Token header for the /api/admin/* routes.\n",
         flush=True,
     )
 
@@ -61,7 +61,7 @@ async def lifespan(_app):
     yield
 
 
-app = FastAPI(title="AQL Network — Coordinateur", version="0.3.0", lifespan=lifespan)
+app = FastAPI(title="AQL Network — Coordinator", version="0.3.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[o.strip() for o in os.getenv("CORS_ALLOW_ORIGINS", "*").split(",")],
@@ -69,14 +69,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Nœuds actuellement en attente d'un job : capacité de service disponible.
+# Nodes currently waiting for a job: available serving capacity.
 _waiting: set[str] = set()
 _waiting_lock = threading.Lock()
-# Limite de création de comptes par IP.
+# Account creation limit per IP.
 _account_creations: dict[str, collections.deque] = collections.defaultdict(collections.deque)
 
 
-# ---------------------------------------------------------------- modèles
+# ---------------------------------------------------------------- models
 
 
 class RegisterRequest(BaseModel):
@@ -114,16 +114,16 @@ class ChatRequest(BaseModel):
 
 def _auth_node(conn, node_id: str | None, node_token: str | None):
     if not node_id or not node_token:
-        raise HTTPException(401, "en-têtes X-Node-Id / X-Node-Token requis")
+        raise HTTPException(401, "X-Node-Id / X-Node-Token headers required")
     node = conn.execute("SELECT * FROM nodes WHERE id = ?", (node_id,)).fetchone()
     if node is None or not secrets.compare_digest(node["token"], node_token):
-        raise HTTPException(401, "nœud inconnu ou jeton invalide")
+        raise HTTPException(401, "unknown node or invalid token")
     return node
 
 
 def _check_admin(token: str | None):
     if not token or not secrets.compare_digest(ADMIN_TOKEN, token):
-        raise HTTPException(401, "X-Admin-Token invalide")
+        raise HTTPException(401, "invalid X-Admin-Token")
 
 
 def _touch(conn, node_id: str):
@@ -148,9 +148,9 @@ def _insert_job(conn, node_id: str, kind: str, db_payload: dict, epoch: int) -> 
 
 
 def _background_allowed(node_id: str) -> bool:
-    """Le travail d'amélioration ne doit jamais retarder les utilisateurs : il
-    n'est confié que si un autre nœud reste disponible pour servir, ou si
-    aucun utilisateur n'a fait de requête depuis 10 minutes."""
+    """Improvement work must never delay users: it is only handed out if
+    another node remains available to serve, or if no user has made a
+    request in the last 10 minutes."""
     with _waiting_lock:
         others_waiting = len(_waiting - {node_id})
     return others_waiting >= 1 or serving.seconds_since_user_request() > 600
@@ -162,19 +162,19 @@ def _clean_messages(messages: list[dict]) -> list[dict]:
         role = m.get("role")
         content = m.get("content")
         if role not in ("system", "user", "assistant") or not isinstance(content, str):
-            raise HTTPException(400, "messages : chaque élément exige role (system|user|assistant) et content (texte)")
+            raise HTTPException(400, "messages: every item requires role (system|user|assistant) and content (text)")
         clean.append({"role": role, "content": content})
     if not clean or sum(len(m["content"]) for m in clean) > 200_000:
-        raise HTTPException(400, "messages vides ou trop longs (200 000 caractères max)")
+        raise HTTPException(400, "messages empty or too long (200,000 characters max)")
     return clean
 
 
-# ---------------------------------------------------------------- routes publiques
+# ---------------------------------------------------------------- public routes
 
 
 @app.get("/")
 def root():
-    return {"service": "AQL Network — Coordinateur", "version": app.version, "epoch": rewards.current_epoch(), "docs": "/docs"}
+    return {"service": "AQL Network — Coordinator", "version": app.version, "epoch": rewards.current_epoch(), "docs": "/docs"}
 
 
 @app.get("/api/stats")
@@ -260,12 +260,12 @@ def current_epoch_info():
 
 @app.get("/api/epochs/{epoch_id}/settlement")
 def epoch_settlement(epoch_id: int):
-    """Règlement complet d'une époque (racine, gains, preuves). Public : ces
-    données finissent on-chain et chacun peut revérifier sa part."""
+    """Full settlement of an epoch (root, earnings, proofs). Public: this data
+    ends up on-chain and anyone can re-check their share."""
     with db.read() as conn:
         row = conn.execute("SELECT settlement FROM epochs WHERE id = ?", (epoch_id,)).fetchone()
     if row is None:
-        raise HTTPException(404, f"époque {epoch_id} non réglée")
+        raise HTTPException(404, f"epoch {epoch_id} not settled")
     return json.loads(row["settlement"])
 
 
@@ -290,9 +290,9 @@ def pricing_info():
         "model": settings.NETWORK_MODEL,
         "price_usdt_per_million_tokens": price / 1_000_000,
         "rule": (
-            f"Ajusté automatiquement à chaque époque selon la charge : ±{int(settings.PRICE_MAX_STEP * 100)} % "
-            f"au plus, cible {int(settings.PRICE_TARGET_UTILIZATION * 100)} % d'utilisation, "
-            f"bornes {settings.PRICE_MIN_MICRO / 1e6}–{settings.PRICE_MAX_MICRO / 1e6} USDT."
+            f"Adjusted automatically every epoch based on load: at most ±{settings.PRICE_MAX_STEP * 100:g}% "
+            f"per epoch, target {settings.PRICE_TARGET_UTILIZATION * 100:g}% utilization, "
+            f"bounds {settings.PRICE_MIN_MICRO / 1e6:g}–{settings.PRICE_MAX_MICRO / 1e6:g} USDT per million tokens."
         ),
         "plans": plans,
         "requests_per_minute": settings.REQUESTS_PER_MINUTE,
@@ -307,8 +307,8 @@ def benchmark_info():
     return {
         "interval_hours": settings.BENCH_INTERVAL_SECONDS / 3600,
         "tasks_per_run": settings.BENCH_TASKS,
-        "method": "Tâches générées à partir d'une graine publique, corrigées automatiquement, "
-                  "posées à l'identique au réseau et aux modèles de référence.",
+        "method": "Tasks generated from a public seed, graded automatically, "
+                  "given identically to the network and to the reference models.",
         "references": [r["name"] for r in settings.BENCH_REFERENCES],
         "history": hist,
     }
@@ -319,8 +319,8 @@ def evolution_info():
     with db.read() as conn:
         return {
             "active_prompt": evolution.active(conn),
-            "rule": f"Promu si {settings.MEASURES_REQUIRED} mesureurs constatent chacun au moins "
-                    f"{settings.MEASURE_MIN_GAIN} bonnes réponses de plus sur {settings.MEASURE_TASKS}.",
+            "rule": f"Promoted if {settings.MEASURES_REQUIRED} measurers each see at least "
+                    f"{settings.MEASURE_MIN_GAIN} more correct answers out of {settings.MEASURE_TASKS}.",
             "candidates": evolution.overview(conn),
         }
 
@@ -330,7 +330,7 @@ def list_models():
     return {"object": "list", "data": [{"id": settings.NETWORK_MODEL, "object": "model", "owned_by": "aql-network"}]}
 
 
-# ---------------------------------------------------------------- comptes & IA
+# ---------------------------------------------------------------- accounts & AI
 
 
 @app.post("/api/accounts")
@@ -341,14 +341,14 @@ def create_account(request: Request):
     while window and now - window[0] > 60:
         window.popleft()
     if len(window) >= 10:
-        raise HTTPException(429, "trop de créations de compte depuis cette adresse, réessayez dans une minute")
+        raise HTTPException(429, "too many accounts created from this address, try again in a minute")
     window.append(now)
     with db.write() as conn:
         created = accounts.create(conn)
     return {
         **created,
-        "message": "Conservez la clé : elle n'est affichée qu'une fois. Créditez le compte via "
-                   "AQLNetwork.pay(montant, account_ref).",
+        "message": "Keep the key: it is shown only once. Credit the account with "
+                   "AQLNetwork.pay(amount, account_ref).",
     }
 
 
@@ -357,7 +357,7 @@ def account_me(authorization: str | None = Header(default=None)):
     with db.read() as conn:
         account = accounts.authenticate(conn, authorization)
         if account is None:
-            raise HTTPException(401, "clé d'accès invalide")
+            raise HTTPException(401, "invalid access key")
         pays = conn.execute(
             "SELECT tx_hash, block_number, received_micro FROM payments WHERE account_id = ?"
             " ORDER BY block_number DESC LIMIT 20",
@@ -377,17 +377,17 @@ def account_me(authorization: str | None = Header(default=None)):
 @app.post("/v1/chat/completions")
 async def chat_completions(req: ChatRequest, authorization: str | None = Header(default=None)):
     if req.stream:
-        raise HTTPException(400, "stream=true n'est pas encore pris en charge")
+        raise HTTPException(400, "stream=true is not supported yet")
     messages = _clean_messages(req.messages)
     epoch = rewards.current_epoch()
     with db.write() as conn:
         account = accounts.authenticate(conn, authorization)
         if account is None:
-            raise HTTPException(401, "clé d'accès invalide (en-tête Authorization: Bearer aql_…)")
+            raise HTTPException(401, "invalid access key (header Authorization: Bearer aql_…)")
         price = pricing.price_for_epoch(conn, epoch)
         prompt = evolution.active(conn)["content"]
     if not accounts.allow_request(account["id"]):
-        raise HTTPException(429, f"limite de {settings.REQUESTS_PER_MINUTE} requêtes par minute atteinte")
+        raise HTTPException(429, f"limit of {settings.REQUESTS_PER_MINUTE} requests per minute reached")
 
     final_messages = serving.with_network_prompt(messages, prompt)
     max_tokens = max(1, min(req.max_tokens, settings.MAX_TOKENS_CAP))
@@ -395,8 +395,8 @@ async def chat_completions(req: ChatRequest, authorization: str | None = Header(
     if not accounts.reserve(account["id"], int(account["balance_micro"]), estimate):
         raise HTTPException(
             402,
-            f"crédit insuffisant : {account['balance_micro'] / 1e6:.6f} USDT disponibles, "
-            f"{estimate / 1e6:.6f} USDT requis au maximum pour cette requête",
+            f"insufficient credit: {account['balance_micro'] / 1e6:.6f} USDT available, "
+            f"up to {estimate / 1e6:.6f} USDT required for this request",
         )
     rid = serving.submit(
         final_messages, max_tokens, req.temperature,
@@ -410,7 +410,7 @@ async def chat_completions(req: ChatRequest, authorization: str | None = Header(
             state = serving.get(rid)
         if not state or state["status"] != "done":
             serving.expire(rid)
-            raise HTTPException(504, "aucun mineur n'a répondu dans le délai : requête non facturée")
+            raise HTTPException(504, "no miner answered in time: request not charged")
         return {
             "id": "aql-" + rid,
             "object": "chat.completion",
@@ -435,19 +435,19 @@ async def chat_completions(req: ChatRequest, authorization: str | None = Header(
         serving.forget(rid)
 
 
-# ---------------------------------------------------------------- routes nœuds
+# ---------------------------------------------------------------- node routes
 
 
 @app.post("/api/nodes/register")
 def register_node(req: RegisterRequest):
     if req.node_type not in ("gpu", "storage"):
-        raise HTTPException(400, "node_type doit être 'gpu' ou 'storage'")
+        raise HTTPException(400, "node_type must be 'gpu' or 'storage'")
     try:
         wallet = merkle.normalize_address(req.wallet)
     except ValueError as exc:
         raise HTTPException(400, str(exc))
     if req.node_type == "storage" and req.storage_allocated_gb <= 0:
-        raise HTTPException(400, "storage_allocated_gb requis pour un nœud de stockage")
+        raise HTTPException(400, "storage_allocated_gb required for a storage node")
 
     model = req.model.strip()[:120] if req.node_type == "gpu" else ""
     node_id = secrets.token_hex(12)
@@ -464,9 +464,9 @@ def register_node(req: RegisterRequest):
         )
         node = conn.execute("SELECT * FROM nodes WHERE id = ?", (node_id,)).fetchone()
     ok, reason = serving.eligible(node) if req.node_type == "gpu" else (True, "")
-    message = f"Nœud {req.node_type} enregistré. Les gains iront à {wallet}."
+    message = f"{req.node_type} node registered. Earnings will go to {wallet}."
     if not ok:
-        message += f" ATTENTION : ce nœud ne recevra aucun travail de calcul — {reason}."
+        message += f" WARNING: this node will receive no compute work — {reason}."
     return {
         "node_id": node_id,
         "node_token": token,
@@ -518,8 +518,8 @@ async def next_job(
     x_node_id: str | None = Header(default=None),
     x_node_token: str | None = Header(default=None),
 ):
-    """Attente longue (jusqu'à LONG_POLL_SECONDS) : un mineur prêt à servir
-    reçoit une requête dès qu'elle arrive, sans interroger en boucle."""
+    """Long poll (up to LONG_POLL_SECONDS): a miner ready to serve receives a
+    request as soon as it arrives, without polling in a loop."""
     epoch = rewards.current_epoch()
     with db.write() as conn:
         node = _auth_node(conn, x_node_id, x_node_token)
@@ -573,9 +573,9 @@ def submit_job(
         _touch(conn, node["id"])
         job = conn.execute("SELECT * FROM jobs WHERE id = ?", (req.job_id,)).fetchone()
         if job is None or job["node_id"] != node["id"]:
-            raise HTTPException(404, "job inconnu pour ce nœud")
+            raise HTTPException(404, "unknown job for this node")
         if job["status"] != "assigned":
-            raise HTTPException(409, f"job déjà clôturé ({job['status']})")
+            raise HTTPException(409, f"job already closed ({job['status']})")
 
         payload = json.loads(job["payload"])
         kind = job["kind"]
@@ -617,7 +617,7 @@ def submit_job(
                 status = "failed"
 
         else:
-            raise HTTPException(400, f"type de job inconnu: {kind}")
+            raise HTTPException(400, f"unknown job type: {kind}")
 
         stored_result = {k: v for k, v in req.result.items() if k != "data_b64"}
         conn.execute(
@@ -635,13 +635,13 @@ def submit_job(
     }
 
 
-# ---------------------------------------------------------------- routes admin
+# ---------------------------------------------------------------- admin routes
 
 
 @app.post("/api/admin/epochs/{epoch_id}/settle")
 def settle(epoch_id: int, usdt_pool: int = 0, x_admin_token: str | None = Header(default=None)):
-    """`usdt_pool` : USDT du pool mineurs disponible on-chain (AQLNetwork.minerPool),
-    en unités de base, transmis par l'oracle-daemon."""
+    """`usdt_pool`: USDT in the miner pool available on-chain (AQLNetwork.minerPool),
+    in base units, passed in by the oracle daemon."""
     _check_admin(x_admin_token)
     try:
         settlement = rewards.settle_epoch(epoch_id, usdt_pool)
@@ -655,7 +655,7 @@ def settle(epoch_id: int, usdt_pool: int = 0, x_admin_token: str | None = Header
         "usdt_total": settlement["usdt_total"],
         "claims": len(settlement["claims"]),
         "settlement_file": f"{settings.SETTLEMENTS_DIR}/epoch_{epoch_id}.json",
-        "next_step": "les oracles votent cette époque (contracts/scripts/oracle-daemon.js)",
+        "next_step": "the oracles vote on this epoch (contracts/scripts/oracle-daemon.js)",
     }
 
 
@@ -668,7 +668,7 @@ def run_benchmark_now(x_admin_token: str | None = Header(default=None)):
 
 @app.get("/api/admin/payments/unmatched")
 def unmatched_payments(x_admin_token: str | None = Header(default=None)):
-    """Paiements dont la référence ne correspond à aucun compte (erreur de saisie)."""
+    """Payments whose reference matches no account (typing error)."""
     _check_admin(x_admin_token)
     with db.read() as conn:
         rows = conn.execute("SELECT * FROM payments WHERE credited = 0 ORDER BY block_number").fetchall()
@@ -681,9 +681,9 @@ def archive(req: ArchiveRequest, x_admin_token: str | None = Header(default=None
     try:
         data = base64.b64decode(req.data_b64, validate=True)
     except Exception:
-        raise HTTPException(400, "data_b64 invalide")
+        raise HTTPException(400, "invalid data_b64")
     if not data:
-        raise HTTPException(400, "données vides")
+        raise HTTPException(400, "empty data")
     with db.write() as conn:
         try:
             return storage_net.archive(conn, req.key[:200], data)

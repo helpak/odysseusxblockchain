@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
-"""Test de bout en bout de la pile AQL complète, en conditions réelles locales.
+"""End-to-end test of the complete AQL stack, under real local conditions.
 
-Lance une vraie chaîne (ganache), déploie les contrats, démarre le coordinateur
-et de vrais processus mineurs, puis vérifie tout le cycle :
+Starts a real chain (ganache), deploys the contracts, starts the coordinator
+and real miner processes, then checks the whole cycle:
 
-   1. un utilisateur crée un compte et paie en USDT on-chain -> crédit automatique ;
-   2. un mineur TRICHEUR sert des réponses fausses -> contrôle, arbitrage,
-      sanction, exclusion ;
-   3. les mineurs honnêtes servent l'IA ; le compte est débité au prix du moment ;
-   4. l'IA s'améliore toute seule : prompt candidat mesuré au benchmark, promu ;
-   5. benchmark public : le réseau répond aux tâches générées ;
-   6. fin d'époque : deux oracles votent (AQL + USDT du pool mineurs) ;
-   7. un mineur honnête réclame ses gains (claimMany) : AQL + USDT reçus.
+   1. a user creates an account and pays USDT on-chain -> automatic credit;
+   2. a CHEATING miner serves wrong answers -> check, arbitration,
+      penalty, exclusion;
+   3. honest miners serve the AI; the account is charged at the current price;
+   4. the AI improves itself: candidate prompt measured on the benchmark, promoted;
+   5. public benchmark: the network answers the generated tasks;
+   6. end of epoch: two oracles vote (AQL + USDT from the miner pool);
+   7. an honest miner claims its earnings (claimMany): AQL + USDT received.
 
-Les « modèles » des mineurs sont des serveurs de test compatibles OpenAI :
-l'honnête résout les tâches quand son prompt système contient « AMÉLIORÉ »,
-le tricheur renvoie du texte aléatoire.
+The miners' "models" are OpenAI-compatible test servers: the honest one solves
+the tasks when its system prompt contains "IMPROVED", the cheater returns
+random text.
 
-Prérequis : cd contracts && npm install && npm run compile ;
-            pip install -r network/coordinator/requirements.txt
-Lancer    : python3 network/tests/e2e_stack.py      (≈ 5 minutes)
+Requirements: cd contracts && npm install && npm run compile;
+              pip install -r network/coordinator/requirements.txt
+Run:          python3 network/tests/e2e_stack.py      (≈ 5 minutes)
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ COORD = ROOT / "network" / "coordinator"
 MINER = ROOT / "network" / "miner" / "aql_miner.py"
 HELPER = ROOT / "network" / "tests" / "chain_helper.js"
 sys.path.insert(0, str(COORD))
-import tasks  # noqa: E402  (générateur partagé : jours, normalisation)
+import tasks  # noqa: E402  (shared generator: days, normalisation)
 
 RPC_PORT, COORD_PORT, HONEST_PORT, LIAR_PORT = 8555, 9400, 18001, 18002
 RPC = f"http://127.0.0.1:{RPC_PORT}"
@@ -56,7 +56,7 @@ ADMIN = "e2e-admin-token"
 MODEL = "stub-model"
 EPOCH0_SECONDS_LEFT = 240
 
-# Comptes déterministes de ganache.
+# Ganache deterministic accounts.
 KEYS = [
     "0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d",
     "0x6cbed15c793ce57650b9877cf6fa156fbef513c4e6134f022a85b1ffdd59b2a1",
@@ -84,7 +84,7 @@ def ok(msg: str) -> None:
 
 
 def fail(msg: str) -> None:
-    print(f"ÉCHEC  {msg}\n(journaux : {WORK})", flush=True)
+    print(f"FAIL  {msg}\n(logs: {WORK})", flush=True)
     sys.exit(1)
 
 
@@ -122,7 +122,7 @@ def node_helper(*args: str) -> str:
     out = subprocess.run(["node", str(HELPER), *args], env={**os.environ, "RPC_URL": RPC},
                          capture_output=True, text=True, timeout=120)
     if out.returncode != 0:
-        fail(f"chain_helper {args[0]} : {out.stderr.strip()}")
+        fail(f"chain_helper {args[0]}: {out.stderr.strip()}")
     return out.stdout.strip()
 
 
@@ -133,43 +133,43 @@ def wait_until(predicate, timeout: float, what: str, step: float = 1.0):
         if value:
             return value
         time.sleep(step)
-    fail(f"délai dépassé : {what}")
+    fail(f"timed out: {what}")
 
 
-# ---------------------------------------------------------------- modèles de test
+# ---------------------------------------------------------------- test models
 
 
 def solve(question: str) -> str | None:
     q = question.strip()
-    m = re.search(r"Calcule \((\d+) × (\d+)\) \+ (\d+) − (\d+)\.", q)
+    m = re.search(r"Compute \((\d+) × (\d+)\) \+ (\d+) − (\d+)\.", q)
     if m:
         a, b, c, d = map(int, m.groups())
         return str(a * b + c - d)
-    m = re.search(r"Combien font (\d+) % de (\d+) \?", q)
+    m = re.search(r"What is (\d+)% of (\d+)\?", q)
     if m:
         p, base = map(int, m.groups())
         return str(base * p // 100)
-    m = re.search(r"de (\d+) km/h pendant (\d+) h(?: (\d+) min)?\.", q)
+    m = re.search(r"constant (\d+) km/h for (\d+) h(?: (\d+) min)?\.", q)
     if m:
         v, h, mins = int(m.group(1)), int(m.group(2)), int(m.group(3) or 0)
         return str(v * h + v * mins // 60)
-    m = re.search(r"minutes dans ([\d,]+) heures", q)
+    m = re.search(r"minutes are there in ([\d.]+) hours", q)
     if m:
-        return str(int(float(m.group(1).replace(",", ".")) * 60))
-    m = re.search(r"la suite : ([\d, ]+), \?", q)
+        return str(int(float(m.group(1)) * 60))
+    m = re.search(r"the sequence: ([\d, ]+), \?", q)
     if m:
         n = [int(x) for x in m.group(1).split(",")]
         return str(n[-1] * (n[-1] // n[-2]))
-    m = re.search(r"ordre croissant : ([\d, ]+)\.", q)
+    m = re.search(r"ascending order: ([\d, ]+)\.", q)
     if m:
         return ", ".join(map(str, sorted(int(x) for x in m.group(1).split(","))))
-    m = re.search(r"aujourd'hui est (\w+), quel jour de la semaine serons-nous dans (\d+) jours", q)
+    m = re.search(r"If today is (\w+), what day of the week will it be in (\d+) days", q)
     if m:
         return tasks.DAYS[(tasks.DAYS.index(m.group(1)) + int(m.group(2))) % 7]
-    m = re.search(r"la lettre « (.) » apparaît-elle dans le mot « (\w+) »", q)
+    m = re.search(r'the letter "(.)" appear in the word "(\w+)"', q)
     if m:
-        return str(tasks._strip_accents(m.group(2)).count(m.group(1)))
-    m = re.search(r"Résous : (\d+)x \+ (\d+) = (\d+)\.", q)
+        return str(m.group(2).count(m.group(1)))
+    m = re.search(r"Solve: (\d+)x \+ (\d+) = (\d+)\.", q)
     if m:
         a, b, c = map(int, m.groups())
         return str((c - b) // a)
@@ -179,14 +179,14 @@ def solve(question: str) -> str | None:
 def honest_answer(messages: list[dict]) -> str:
     system = " ".join(m["content"] for m in messages if m["role"] == "system")
     user = next((m["content"] for m in reversed(messages) if m["role"] == "user"), "")
-    if "Tu améliores le prompt système" in system:
-        return ("Prompt système AMÉLIORÉ : lis chaque question attentivement, calcule étape par étape, "
-                "vérifie ton résultat, puis termine par la ligne RÉPONSE: <réponse>.")
-    if "RÉPONSE: <réponse finale>" in user:
-        if "AMÉLIORÉ" in system:
-            return f"Je raisonne étape par étape.\nRÉPONSE: {solve(user.split(chr(10))[0]) or '?'}"
-        return "RÉPONSE: 0"
-    return f"Réponse du modèle AQL (test) à : {user[:200]}"
+    if "You are improving the system prompt" in system:
+        return ("IMPROVED system prompt: read each question carefully, compute step by step, "
+                "check your result, then end with the line ANSWER: <answer>.")
+    if "ANSWER: <final answer>" in user:
+        if "IMPROVED" in system:
+            return f"I reason step by step.\nANSWER: {solve(user.split(chr(10))[0]) or '?'}"
+        return "ANSWER: 0"
+    return f"AQL model answer (test) to: {user[:200]}"
 
 
 def liar_answer(_messages: list[dict]) -> str:
@@ -231,16 +231,16 @@ def chat(api_key: str, text: str) -> dict:
                 {"Authorization": f"Bearer {api_key}"})
 
 
-# ---------------------------------------------------------------- scénario
+# ---------------------------------------------------------------- scenario
 
 
 def main() -> None:
-    log(f"répertoire de travail : {WORK}")
+    log(f"working directory: {WORK}")
 
-    # --- chaîne + contrats
+    # --- chain + contracts
     spawn("ganache", [str(CONTRACTS / "node_modules" / ".bin" / "ganache"), "--deterministic",
                       "--server.port", str(RPC_PORT), "--logging.quiet"])
-    wait_until(lambda: _rpc_alive(), 30, "démarrage de ganache")
+    wait_until(lambda: _rpc_alive(), 30, "ganache start")
     genesis = int(time.time()) - 86_400 + EPOCH0_SECONDS_LEFT
     out = subprocess.run(
         ["node", "scripts/deploy.js"], cwd=CONTRACTS, capture_output=True, text=True, timeout=120,
@@ -248,15 +248,15 @@ def main() -> None:
              "ORACLE_THRESHOLD": "2", "GENESIS_TS": str(genesis)},
     )
     if out.returncode != 0:
-        fail(f"déploiement : {out.stderr}")
+        fail(f"deployment: {out.stderr}")
     dep_file = CONTRACTS / "deployments.1337.json"
     deployed = json.loads(dep_file.read_text())
     (WORK / "deployments.json").write_text(dep_file.read_text())
     dep_file.unlink()
     dep = str(WORK / "deployments.json")
-    ok(f"contrats déployés (genèse : fin d'époque 0 dans {EPOCH0_SECONDS_LEFT} s)")
+    ok(f"contracts deployed (genesis: epoch 0 ends in {EPOCH0_SECONDS_LEFT} s)")
 
-    # --- coordinateur + modèles de test
+    # --- coordinator + test models
     stub_server(HONEST_PORT, honest_answer)
     stub_server(LIAR_PORT, liar_answer)
     spawn("coordinator", [sys.executable, "-m", "uvicorn", "main:app", "--host", "127.0.0.1",
@@ -267,67 +267,67 @@ def main() -> None:
         "CHAIN_POLL_SECONDS": "1", "CHAIN_CONFIRMATIONS": "0", "VERIFY_SAMPLE_RATE": "1.0",
         "LONG_POLL_SECONDS": "2", "BENCH_INTERVAL_SECONDS": "0",
     })
-    wait_until(lambda: _http_alive(f"{COORDINATOR}/"), 30, "démarrage du coordinateur")
-    ok("coordinateur démarré, modèle du réseau : " + http("GET", f"{COORDINATOR}/v1/models")["data"][0]["id"])
+    wait_until(lambda: _http_alive(f"{COORDINATOR}/"), 30, "coordinator start")
+    ok("coordinator started, network model: " + http("GET", f"{COORDINATOR}/v1/models")["data"][0]["id"])
 
-    # --- 1. compte + paiement on-chain -> crédit automatique
+    # --- 1. account + on-chain payment -> automatic credit
     account = http("POST", f"{COORDINATOR}/api/accounts")
     key = account["api_key"]
     node_helper("pay", dep, KEYS[0], "50", account["account_ref"])
     me = wait_until(
         lambda: (lambda m: m if m["balance_usdt"] > 0 else None)(
             http("GET", f"{COORDINATOR}/api/accounts/me", headers={"Authorization": f"Bearer {key}"})),
-        30, "crédit du compte après paiement",
+        30, "account credit after payment",
     )
     if me["balance_usdt"] != 50:
-        fail(f"crédit attendu 50 USDT, obtenu {me['balance_usdt']}")
-    ok("paiement de 50 USDT on-chain -> compte crédité automatiquement (aucune intervention)")
+        fail(f"expected 50 USDT credit, got {me['balance_usdt']}")
+    ok("50 USDT paid on-chain -> account credited automatically (no intervention)")
 
-    # --- 2. un tricheur seul sert deux requêtes, puis les honnêtes le démasquent
+    # --- 2. a cheater alone serves two requests, then the honest miners expose it
     start_miner("liar", LIAR, LIAR_PORT)
     for i in range(2):
-        chat(key, f"Question {i} servie par le tricheur")
+        chat(key, f"Question {i} served by the cheater")
     for i, wallet in enumerate(HONEST):
         start_miner(f"honest{i}", wallet, HONEST_PORT)
-    wait_until(lambda: reputation(LIAR) < 5, 90, "sanction du tricheur")
-    ok(f"tricheur démasqué par contrôle + arbitrage : réputation {reputation(LIAR)} (< 5, exclu du service)")
+    wait_until(lambda: reputation(LIAR) < 5, 90, "cheater penalty")
+    ok(f"cheater exposed by check + arbitration: reputation {reputation(LIAR)} (< 5, excluded from serving)")
 
-    # --- 3. service honnête facturé
+    # --- 3. honest serving, charged
     before = http("GET", f"{COORDINATOR}/api/accounts/me", headers={"Authorization": f"Bearer {key}"})
-    answers = [chat(key, f"Bonjour, question numéro {i}") for i in range(8)]
-    if not all("Réponse du modèle AQL" in a["choices"][0]["message"]["content"] for a in answers):
-        fail("une réponse ne vient pas d'un mineur honnête")
+    answers = [chat(key, f"Hello, question number {i}") for i in range(8)]
+    if not all("AQL model answer" in a["choices"][0]["message"]["content"] for a in answers):
+        fail("an answer did not come from an honest miner")
     after = http("GET", f"{COORDINATOR}/api/accounts/me", headers={"Authorization": f"Bearer {key}"})
     cost = before["balance_usdt"] - after["balance_usdt"]
     if not cost > 0:
-        fail("le compte n'a pas été débité")
-    ok(f"8 requêtes servies par les mineurs honnêtes, compte débité de {cost:.6f} USDT au prix automatique")
+        fail("the account was not charged")
+    ok(f"8 requests served by honest miners, account charged {cost:.6f} USDT at the automatic price")
 
-    # --- 4. auto-amélioration prouvée au benchmark
+    # --- 4. self-improvement proven on the benchmark
     evo = wait_until(
         lambda: (lambda e: e if e["active_prompt"]["id"] else None)(http("GET", f"{COORDINATOR}/api/evolution")),
-        120, "promotion d'un prompt amélioré",
+        120, "promotion of an improved prompt",
     )
     promoted = next(c for c in evo["candidates"] if c["status"] == "promoted")
     gains = ", ".join(f"{m['baseline']}→{m['candidate']}/{m['total']}" for m in promoted["measurements"])
-    ok(f"IA améliorée automatiquement : prompt promu après mesures ({gains})")
+    ok(f"AI improved automatically: prompt promoted after measurements ({gains})")
 
-    # --- 5. benchmark public
+    # --- 5. public benchmark
     http("POST", f"{COORDINATOR}/api/admin/benchmark/run", headers={"X-Admin-Token": ADMIN})
     run = wait_until(
         lambda: next((r for r in http("GET", f"{COORDINATOR}/api/benchmark")["history"]
                       if r["target"] == "network"), None),
-        120, "résultat du benchmark",
+        120, "benchmark result",
     )
     if run["correct"] is None or run["correct"] < run["total"] * 0.8:
-        fail(f"benchmark réseau trop bas : {run}")
-    ok(f"benchmark public : le réseau réussit {run['correct']}/{run['total']} tâches générées")
+        fail(f"network benchmark too low: {run}")
+    ok(f"public benchmark: the network passes {run['correct']}/{run['total']} generated tasks")
     pricing = http("GET", f"{COORDINATOR}/api/pricing")
-    ok(f"prix automatique : {pricing['price_usdt_per_million_tokens']} USDT / million de tokens")
+    ok(f"automatic price: {pricing['price_usdt_per_million_tokens']} USDT / million tokens")
 
-    # --- 6. fin d'époque : vote des oracles (AQL + USDT)
-    log(f"attente de la fin de l'époque 0 (genèse + 1 jour)…")
-    wait_until(lambda: time.time() > genesis + 86_400 + 2, EPOCH0_SECONDS_LEFT + 30, "fin de l'époque 0", step=2)
+    # --- 6. end of epoch: oracle vote (AQL + USDT)
+    log("waiting for the end of epoch 0 (genesis + 1 day)…")
+    wait_until(lambda: time.time() > genesis + 86_400 + 2, EPOCH0_SECONDS_LEFT + 30, "end of epoch 0", step=2)
     node_helper("mine")
     pool_before = int(node_helper("minerpool", dep))
     for i in (1, 2):
@@ -340,29 +340,29 @@ def main() -> None:
         )
         (WORK / f"oracle{i}.log").write_text(out.stdout + out.stderr)
     settlement = http("GET", f"{COORDINATOR}/api/epochs/0/settlement")
-    if "FINALISÉE" not in (WORK / "oracle2.log").read_text():
-        fail("époque 0 non finalisée par les oracles")
+    if "FINALIZED" not in (WORK / "oracle2.log").read_text():
+        fail("epoch 0 not finalized by the oracles")
     usdt_total = int(settlement["usdt_total"])
     if not 0 < usdt_total <= pool_before:
-        fail(f"USDT de l'époque incohérent : {usdt_total} (pool {pool_before})")
-    ok(f"époque 0 finalisée à 2 oracles sur 3 : {int(settlement['aql_total']) / 1e18:,.2f} AQL "
-       f"+ {usdt_total / 1e6:.6f} USDT (pool mineurs {pool_before / 1e6:.6f})")
+        fail(f"inconsistent epoch USDT: {usdt_total} (pool {pool_before})")
+    ok(f"epoch 0 finalized by 2 of 3 oracles: {int(settlement['aql_total']) / 1e18:,.2f} AQL "
+       f"+ {usdt_total / 1e6:.6f} USDT (miner pool {pool_before / 1e6:.6f})")
     liar_claim = next((c for c in settlement["claims"] if c["account"] == LIAR.lower()), None)
     if liar_claim and int(liar_claim["usdt"]) > 0:
-        fail(f"le tricheur touche de l'USDT : {liar_claim}")
-    ok("le tricheur ne touche aucun USDT des utilisateurs")
+        fail(f"the cheater receives USDT: {liar_claim}")
+    ok("the cheater receives none of the users' USDT")
 
-    # --- 7. réclamation par un mineur honnête
+    # --- 7. claim by an honest miner
     wallet = HONEST[0]
     claim = next(c for c in settlement["claims"] if c["account"] == wallet.lower())
     node_helper("claim", dep, COORDINATOR, wallet, KEYS[0])
     bal = json.loads(node_helper("balances", dep, wallet))
     if int(bal["aql_wei"]) != int(claim["aql"]) or int(bal["usdt"]) != int(claim["usdt"]):
-        fail(f"soldes après claim incohérents : {bal} vs {claim}")
-    ok(f"mineur honnête payé on-chain : {int(bal['aql_wei']) / 1e18:,.2f} AQL + {int(bal['usdt']) / 1e6:.6f} USDT")
+        fail(f"inconsistent balances after claim: {bal} vs {claim}")
+    ok(f"honest miner paid on-chain: {int(bal['aql_wei']) / 1e18:,.2f} AQL + {int(bal['usdt']) / 1e6:.6f} USDT")
 
-    print("\nE2E PILE COMPLÈTE : paiement -> crédit -> service -> contrôle -> amélioration -> "
-          "benchmark -> oracles -> claims, vérifiés.")
+    print("\nFULL-STACK E2E: payment -> credit -> serving -> check -> improvement -> "
+          "benchmark -> oracles -> claims, verified.")
 
 
 def _rpc_alive() -> bool:

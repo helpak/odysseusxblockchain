@@ -1,4 +1,4 @@
-// Tarifs : prix automatique, formules, historique.
+// Pricing: automatic price, plans, history.
 (function () {
   "use strict";
   const { api, $, setText, num } = window.AQL;
@@ -23,7 +23,7 @@
       const h3 = document.createElement("h3");
       h3.textContent = `${plan.name} — ${plan.usdt} USDT`;
       const para = document.createElement("p");
-      para.textContent = `≈ ${num(plan.approx_tokens, 0)} tokens au prix actuel.`;
+      para.textContent = `≈ ${num(plan.approx_tokens, 0)} tokens at the current price.`;
       card.append(h3, para);
       $("p-plans").appendChild(card);
     }
@@ -34,10 +34,10 @@
       const tr = document.createElement("tr");
       cell(tr, h.epoch_id);
       cell(tr, num(h.price_usdt_per_million, 4), true);
-      cell(tr, h.utilization_pct === null ? "—" : `${num(h.utilization_pct, 1)} %`, true);
+      cell(tr, h.utilization_pct === null ? "—" : `${num(h.utilization_pct, 1)}%`, true);
       body.appendChild(tr);
     }
   }).catch(() => {
-    setText("p-rule", "Coordinateur injoignable — tarifs indisponibles pour le moment.");
+    setText("p-rule", "Coordinator unreachable — pricing unavailable for now.");
   });
 })();

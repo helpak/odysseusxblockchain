@@ -1,4 +1,4 @@
-/* Composants propres à la page d'accueil. */
+/* Components specific to the home page. */
 
 /* ---------------------------------------------------------------- hero */
 .home-hero {
@@ -31,7 +31,7 @@
   .hero-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 8px; margin-top: 44px; }
 }
 
-/* ---------------------------------------------------------------- modèle actuel vs AQL */
+/* ---------------------------------------------------------------- current model vs AQL */
 .versus { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
 .versus .card { padding: 28px; }
 .versus h3 { font-size: 1.25rem; margin-bottom: 18px; }
@@ -44,7 +44,7 @@
 .versus .new li { color: var(--text); }
 .versus .new li::before { content: "✓"; color: var(--accent); }
 
-/* ---------------------------------------------------------------- circuit de l'argent */
+/* ---------------------------------------------------------------- money flow */
 .circuit {
   display: grid; grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1.15fr) 72px minmax(0, 1fr);
   align-items: center; margin: 10px 0 36px;
@@ -76,7 +76,7 @@
 .pillars .card h3 { font-size: 1.3rem; }
 .pillars .num-tag { font-family: var(--mono); color: var(--accent); font-size: 0.8rem; display: block; margin-bottom: 18px; }
 
-/* ---------------------------------------------------------------- grands chiffres */
+/* ---------------------------------------------------------------- big numbers */
 .bignums { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid var(--line-strong); }
 .bignums > .wide { grid-column: 1 / -1; border-bottom: 1px solid var(--line); padding-bottom: 28px; }
 .bignums > .wide b { font-size: clamp(2.4rem, 9vw, 7.2rem); }
@@ -90,7 +90,7 @@
 .bignums b.accent { color: var(--accent); }
 .bignums span { color: var(--dim); font-size: 0.95rem; display: block; max-width: 250px; }
 
-/* ---------------------------------------------------------------- émission */
+/* ---------------------------------------------------------------- emission */
 .emission { display: grid; grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr); gap: 40px; align-items: center; }
 .emission p { color: var(--dim); font-size: 1.05rem; }
 .chart-card { padding: 22px 18px 14px; }
@@ -99,7 +99,7 @@
 .chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
 @media (max-width: 860px) { .emission { grid-template-columns: 1fr; gap: 24px; } }
 
-/* ---------------------------------------------------------------- participer */
+/* ---------------------------------------------------------------- take part */
 .join { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
 .join .card { display: flex; flex-direction: column; padding: 28px; transition: border-color 0.2s, transform 0.2s; }
 .join .card:hover { border-color: var(--line-strong); transform: translateY(-3px); }
@@ -109,12 +109,12 @@
 .join .icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: rgba(200, 255, 58, 0.08); border: 1px solid rgba(200, 255, 58, 0.3); }
 .join .icon svg { width: 22px; height: 22px; stroke: var(--accent); }
 
-/* ---------------------------------------------------------------- en direct */
+/* ---------------------------------------------------------------- live */
 .live-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; flex-wrap: wrap; margin-bottom: 26px; }
 .live-head h2 { margin: 0; }
 .live-off { color: var(--dim); max-width: 640px; }
 
-/* ---------------------------------------------------------------- vérifier */
+/* ---------------------------------------------------------------- verify */
 .verify {
   text-align: center; padding: 72px 28px; border-radius: 28px; border: 1px solid var(--line-strong);
   background:

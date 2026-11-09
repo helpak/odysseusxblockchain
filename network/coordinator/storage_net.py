@@ -1,13 +1,13 @@
-"""Réseau de stockage : découpage en chunks, réplication, preuves par défi.
+"""Storage network: splitting into chunks, replication, challenge-based proofs.
 
-Modèle v1 (assumé et documenté) : le coordinateur garde la copie de référence
-de chaque chunk — c'est elle qui permet de vérifier les défis et de garantir
-la restitution. Les nœuds de stockage fournissent la redondance répliquée et
-sont payés à la preuve : un défi demande le sha256(nonce || tranche aléatoire
-du chunk), impossible à produire sans détenir réellement les octets.
+v1 model (deliberate and documented): the coordinator keeps the reference copy
+of every chunk — that copy is what makes it possible to verify challenges and
+to guarantee retrieval. Storage nodes provide replicated redundancy and
+are paid per proof: a challenge asks for sha256(nonce || random slice
+of the chunk), which cannot be produced without actually holding the bytes.
 
-Les données à archiver (ex. conversations) doivent être chiffrées par
-l'application AVANT l'envoi : le réseau ne voit que des blobs opaques.
+Data to archive (e.g. conversations) must be encrypted by the
+application BEFORE upload: the network only sees opaque blobs.
 """
 
 from __future__ import annotations
@@ -24,9 +24,9 @@ def _mb(size: int) -> int:
 
 
 def archive(conn, key: str, data: bytes) -> dict:
-    """Découpe et enregistre un blob sous une clé. Refuse l'écrasement."""
+    """Splits and stores a blob under a key. Refuses to overwrite."""
     if conn.execute("SELECT 1 FROM chunks WHERE key = ? LIMIT 1", (key,)).fetchone():
-        raise ValueError(f"clé déjà archivée: {key}")
+        raise ValueError(f"key already archived: {key}")
     now = int(time.time())
     chunk_ids = []
     for seq, offset in enumerate(range(0, len(data), settings.CHUNK_BYTES)):
@@ -46,7 +46,7 @@ def retrieve(conn, key: str) -> bytes:
         "SELECT data FROM chunks WHERE key = ? ORDER BY seq", (key,)
     ).fetchall()
     if not rows:
-        raise KeyError(f"clé inconnue: {key}")
+        raise KeyError(f"unknown key: {key}")
     return b"".join(row["data"] for row in rows)
 
 
@@ -63,11 +63,11 @@ def _node_used_bytes(conn, node_id: str) -> int:
 
 
 def next_storage_job(conn, node) -> dict | None:
-    """Choisit le prochain travail d'un nœud de stockage.
+    """Picks the next job for a storage node.
 
-    Priorités : 1) ré-envoyer un chunk accepté mais non confirmé,
-    2) répliquer un chunk sous-répliqué, 3) défier un chunk stocké.
-    Retourne {kind, payload, db_payload} ou None.
+    Priorities: 1) resend a chunk that was accepted but not confirmed,
+    2) replicate an under-replicated chunk, 3) challenge a stored chunk.
+    Returns {kind, payload, db_payload} or None.
     """
     now = int(time.time())
 
@@ -110,7 +110,7 @@ def next_storage_job(conn, node) -> dict | None:
         length = min(due["size"], 2048)
         offset = secrets.randbelow(max(1, due["size"] - length + 1))
         nonce = secrets.token_hex(16)
-        # Marque le défi comme lancé pour ne pas le re-générer en boucle.
+        # Mark the challenge as started so it is not regenerated in a loop.
         conn.execute(
             "UPDATE assignments SET last_challenge_at = ? WHERE chunk_id = ? AND node_id = ?",
             (now, due["chunk_id"], node["id"]),
@@ -125,8 +125,8 @@ def _store_job(conn, chunk_id: str) -> dict:
     chunk = conn.execute("SELECT * FROM chunks WHERE id = ?", (chunk_id,)).fetchone()
     return {
         "kind": "store",
-        # Les octets ne sont envoyés qu'au nœud ; pas besoin de les dupliquer
-        # dans la table jobs.
+        # The bytes are only sent to the node; no need to duplicate them
+        # in the jobs table.
         "payload": {
             "chunk_id": chunk["id"],
             "size": chunk["size"],
@@ -138,7 +138,7 @@ def _store_job(conn, chunk_id: str) -> dict:
 
 
 def handle_store_result(conn, node_id: str, payload: dict, result: dict) -> tuple[int, str]:
-    """Confirme un stockage. Retourne (points, message)."""
+    """Confirms a store. Returns (points, message)."""
     chunk_id = payload["chunk_id"]
     chunk = conn.execute("SELECT size, sha256 FROM chunks WHERE id = ?", (chunk_id,)).fetchone()
     assignment = conn.execute(
@@ -146,16 +146,16 @@ def handle_store_result(conn, node_id: str, payload: dict, result: dict) -> tupl
         (chunk_id, node_id),
     ).fetchone()
     if chunk is None or assignment is None:
-        return 0, "assignation inconnue"
+        return 0, "unknown assignment"
     if assignment["status"] == "stored":
-        return 0, "chunk déjà confirmé"
+        return 0, "chunk already confirmed"
     if result.get("sha256") != chunk["sha256"]:
         conn.execute(
             "UPDATE assignments SET status = 'failed', fails = fails + 1"
             " WHERE chunk_id = ? AND node_id = ?",
             (chunk_id, node_id),
         )
-        return 0, "sha256 incorrect : stockage refusé"
+        return 0, "wrong sha256: store refused"
     now = int(time.time())
     conn.execute(
         "UPDATE assignments SET status = 'stored', stored_at = ?, last_challenge_at = ?"
@@ -163,23 +163,23 @@ def handle_store_result(conn, node_id: str, payload: dict, result: dict) -> tupl
         (now, now, chunk_id, node_id),
     )
     points = _mb(chunk["size"]) * settings.POINTS_STORE_PER_MB
-    return points, f"chunk {chunk_id[:8]}… confirmé ({chunk['size']} octets)"
+    return points, f"chunk {chunk_id[:8]}… confirmed ({chunk['size']} bytes)"
 
 
 def handle_challenge_result(conn, node_id: str, payload: dict, result: dict) -> tuple[int, str]:
-    """Vérifie une preuve de stockage. Retourne (points, message)."""
+    """Verifies a storage proof. Returns (points, message)."""
     chunk = conn.execute(
         "SELECT size, data FROM chunks WHERE id = ?", (payload["chunk_id"],)
     ).fetchone()
     if chunk is None:
-        return 0, "chunk inconnu"
+        return 0, "unknown chunk"
     offset, length = int(payload["offset"]), int(payload["length"])
     expected = hashlib.sha256(
         bytes.fromhex(payload["nonce"]) + chunk["data"][offset : offset + length]
     ).hexdigest()
     if result.get("digest") == expected:
         points = _mb(chunk["size"]) * settings.POINTS_CHALLENGE_PER_MB
-        return points, "preuve de stockage valide"
+        return points, "valid storage proof"
 
     row = conn.execute(
         "SELECT fails FROM assignments WHERE chunk_id = ? AND node_id = ?",
@@ -192,8 +192,8 @@ def handle_challenge_result(conn, node_id: str, payload: dict, result: dict) -> 
         (fails, status, payload["chunk_id"], node_id),
     )
     if status == "failed":
-        return 0, "preuve invalide : réplique retirée, le chunk sera ré-attribué"
-    return 0, f"preuve invalide ({fails}/{settings.MAX_CHALLENGE_FAILS} échecs)"
+        return 0, "invalid proof: replica removed, the chunk will be reassigned"
+    return 0, f"invalid proof ({fails}/{settings.MAX_CHALLENGE_FAILS} failures)"
 
 
 def stats(conn) -> dict:
