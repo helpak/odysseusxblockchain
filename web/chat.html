@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Utiliser l'IA — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section>
+      <h2>Utiliser l'IA</h2>
+      <p class="section-sub">L'IA du réseau AQL, servie par ses mineurs. Vous payez au token,
+        au prix du moment, avec un crédit prépayé en USDT.</p>
+
+      <div id="no-account" class="card" style="display:none;">
+        <h3>Créer votre compte</h3>
+        <p>Un compte, c'est une clé d'accès et un crédit. Aucune adresse email, aucune donnée
+          personnelle.</p>
+        <p style="margin-top:12px;" class="row">
+          <button class="btn primary" id="btn-create">Créer mon compte</button>
+          <span class="muted">ou</span>
+          <input type="text" id="key-input" class="mono" placeholder="aql_… (clé existante)" style="max-width:340px;">
+          <button class="btn" id="btn-use-key">Utiliser cette clé</button>
+        </p>
+      </div>
+
+      <div id="new-key" class="banner warn" style="display:none;"></div>
+
+      <div id="has-account" style="display:none;">
+        <div class="row" style="margin-bottom:12px;">
+          <span class="pill" id="balance">crédit : —</span>
+          <span class="pill" id="price">prix : —</span>
+          <a class="btn" href="pay.html">Ajouter du crédit</a>
+          <button class="btn" id="btn-clear">Effacer la conversation</button>
+          <button class="btn" id="btn-logout">Changer de compte</button>
+        </div>
+        <div id="privacy" class="banner info">
+          <strong>Confidentialité.</strong> Le mineur qui sert une requête la voit en clair : c'est
+          inévitable pour faire tourner le modèle. N'envoyez pas de données sensibles. Votre historique
+          reste uniquement dans ce navigateur.
+        </div>
+        <div class="chat-box" id="chat"></div>
+        <div class="chat-input">
+          <textarea id="prompt" placeholder="Écrivez votre message… (Entrée pour envoyer, Maj+Entrée pour aller à la ligne)"></textarea>
+          <button class="btn primary" id="btn-send">Envoyer</button>
+        </div>
+        <p class="muted" id="status" style="font-size:0.88rem;"></p>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/chat.js"></script>
+</body>
+</html>

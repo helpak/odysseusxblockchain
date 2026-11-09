@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mon compte — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section>
+      <h2>Mon compte</h2>
+      <p class="section-sub">Vos AQL, leur valeur au prix du marché, vos revenus de staking et vos
+        gains de minage, au même endroit.</p>
+      <div class="row">
+        <button class="btn primary" id="btn-connect">Connecter mon wallet</button>
+        <span class="muted mono" id="account"></span>
+      </div>
+      <div id="notice" class="banner warn" style="display:none;"></div>
+      <div id="tx" class="banner ok" style="display:none;"></div>
+    </section>
+
+    <div id="dashboard" style="display:none;">
+      <section>
+        <div class="grid c4">
+          <div class="card stat"><div class="value" id="d-value">—</div><div class="label">valeur de mes AQL (USDT)</div></div>
+          <div class="card stat"><div class="value" id="d-price">—</div><div class="label">prix de l'AQL (USDT, marché)</div></div>
+          <div class="card stat"><div class="value" id="d-dividends">—</div><div class="label">revenus de staking à encaisser (USDT)</div></div>
+          <div class="card stat"><div class="value" id="d-mining">—</div><div class="label">gains de minage à réclamer</div></div>
+        </div>
+        <p class="stats-note" id="d-price-note"></p>
+      </section>
+
+      <section>
+        <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+          <div class="card">
+            <h3>Mes AQL</h3>
+            <table>
+              <tr><td>Dans le wallet</td><td class="num right" id="m-balance">—</td></tr>
+              <tr><td>Stakés</td><td class="num right" id="m-staked">—</td></tr>
+              <tr><td>Palier</td><td class="num right" id="m-tier">—</td></tr>
+              <tr><td>Ma part des 33 %</td><td class="num right" id="m-share">—</td></tr>
+              <tr><td>Déverrouillage</td><td class="num right" id="m-unlock">—</td></tr>
+            </table>
+            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-rev">Encaisser mes revenus de staking</button></p>
+          </div>
+          <div class="card">
+            <h3>Staker</h3>
+            <label for="stake-amount">Montant (AQL)</label>
+            <input type="number" id="stake-amount" placeholder="1000" min="0">
+            <label for="stake-tier">Verrouillage</label>
+            <select id="stake-tier">
+              <option value="0">Sans verrou — poids ×1,00</option>
+              <option value="1">90 jours — poids ×1,25</option>
+              <option value="2">180 jours — poids ×1,50</option>
+              <option value="3">365 jours — poids ×2,00</option>
+            </select>
+            <p class="muted" style="font-size:0.85rem;">Les revenus s'écoulent à la seconde : votre part dépend du
+              temps passé staké et de votre poids. Ajouter à une position exige un palier au moins égal.</p>
+            <button class="btn primary" id="btn-stake">Autoriser et staker</button>
+            <label for="unstake-amount" style="margin-top:18px;">Retirer (AQL)</label>
+            <input type="number" id="unstake-amount" placeholder="500" min="0">
+            <p style="margin-top:10px;"><button class="btn" id="btn-unstake">Retirer</button></p>
+          </div>
+          <div class="card">
+            <h3>Ce que rapporte ma puissance</h3>
+            <table>
+              <tr><td>AQL à réclamer</td><td class="num right" id="r-aql">—</td></tr>
+              <tr><td>USDT à réclamer</td><td class="num right" id="r-usdt">—</td></tr>
+              <tr><td>Époques concernées</td><td class="num right" id="r-epochs">—</td></tr>
+              <tr><td>Points de l'époque en cours</td><td class="num right" id="r-points">—</td></tr>
+            </table>
+            <p style="margin-top:12px;"><button class="btn primary" id="btn-claim-mining">Tout réclamer en une transaction</button></p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/vendor/ethers.umd.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/account.js"></script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Puissance & benchmark — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section>
+      <h2>Puissance en direct</h2>
+      <p class="section-sub">Ce que le réseau a vraiment sous le capot, mis à jour toutes les 15 secondes.</p>
+      <div class="grid c4">
+        <div class="card stat"><div class="value" id="w-serving">—</div><div class="label">mineurs prêts à servir l'IA</div></div>
+        <div class="card stat"><div class="value" id="w-waiting">—</div><div class="label">mineurs disponibles à l'instant</div></div>
+        <div class="card stat"><div class="value" id="w-queue">—</div><div class="label">requêtes en attente</div></div>
+        <div class="card stat"><div class="value" id="w-tokens">—</div><div class="label">tokens servis aujourd'hui</div></div>
+        <div class="card stat"><div class="value" id="w-util">—</div><div class="label">charge de l'époque précédente</div></div>
+        <div class="card stat"><div class="value" id="w-gpu">—</div><div class="label">nœuds de calcul actifs</div></div>
+        <div class="card stat"><div class="value" id="w-storage">—</div><div class="label">nœuds de stockage actifs</div></div>
+        <div class="card stat"><div class="value" id="w-replicated">—</div><div class="label">données répliquées</div></div>
+      </div>
+      <p class="stats-note" id="w-note"></p>
+    </section>
+
+    <section>
+      <h2>Benchmark toutes les <span id="b-hours">2</span> heures</h2>
+      <p class="section-sub" id="b-method"></p>
+      <div class="row" style="margin-bottom:14px;">
+        <span class="pill" id="b-next">prochain passage : —</span>
+        <span class="pill" id="b-refs">modèles de référence : —</span>
+      </div>
+      <table>
+        <thead><tr><th>Passage</th><th>Cible</th><th>Modèle</th><th class="right">Score</th><th>Remarque</th></tr></thead>
+        <tbody id="b-history"></tbody>
+      </table>
+      <p class="muted" style="font-size:0.88rem; margin-top:10px;">Même test pour tous : les questions
+        sont générées à partir d'une graine publique et corrigées automatiquement. Aucune jauge
+        « % de tel modèle » : seuls les scores mesurés sont affichés.</p>
+    </section>
+
+    <section>
+      <h2>Auto-amélioration</h2>
+      <p class="section-sub" id="e-rule"></p>
+      <table>
+        <thead><tr><th>Candidat</th><th>Statut</th><th>Mesures (actuel → candidat)</th></tr></thead>
+        <tbody id="e-candidates"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/power.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Reverse proxy HTTPS du coordinateur AQL — Caddy (certificats automatiques).
+# Le site est publié sur Vercel ; ce serveur n'expose que l'API du coordinateur.
+#   sudo cp deploy/Caddyfile.example /etc/caddy/Caddyfile && sudo systemctl reload caddy
+#
+# Le coordinateur reste lié à 127.0.0.1 (défaut du docker-compose) : seul Caddy
+# est exposé à Internet, en HTTPS.
+
+api.exemple.com {
+	reverse_proxy 127.0.0.1:9000 {
+		# Les requêtes d'IA et l'attente longue des mineurs durent jusqu'à quelques minutes.
+		transport http {
+			read_timeout 300s
+			write_timeout 300s
+		}
+	}
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+}
+
+# Optionnel : l'espace de travail Odysseus (profil workspace), avec
+# AUTH_ENABLED=true et SECURE_COOKIES=true dans .env.
+# app.exemple.com {
+# 	reverse_proxy 127.0.0.1:7000
+# 	header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+# }

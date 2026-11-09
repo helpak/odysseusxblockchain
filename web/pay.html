@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ajouter du crédit — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section>
+      <h2>Ajouter du crédit</h2>
+      <p class="section-sub">Le crédit est en USDT et se consomme au token, au prix du moment.
+        Le paiement va directement au contrat du réseau : 67 % aux mineurs, 33 % aux détenteurs
+        d'AQL. Aucun intermédiaire ne détient votre argent.</p>
+
+      <div class="grid c3" id="plans"></div>
+
+      <div class="card" style="margin-top:18px;">
+        <label for="amount">Montant (USDT)</label>
+        <input type="number" id="amount" min="1" step="1" value="20">
+        <label for="ref">Référence de votre compte IA</label>
+        <input type="text" id="ref" class="mono" placeholder="0x… (créée sur la page « Utiliser l'IA »)">
+        <p class="muted" style="font-size:0.85rem;">Le crédit arrive automatiquement sur le compte qui
+          porte cette référence, quelques blocs après le paiement. Vérifiez-la : un paiement vers une
+          mauvaise référence ne peut pas être annulé.</p>
+        <p class="row" style="margin-top:12px;">
+          <button class="btn primary" id="btn-pay">Payer avec mon wallet</button>
+          <a class="btn" id="btn-onramp" target="_blank" rel="noopener" style="display:none;">Acheter des USDT par carte</a>
+        </p>
+        <div id="pay-status" class="banner info" style="display:none;"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/vendor/ethers.umd.min.js"></script>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/pay.js"></script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tarifs — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+    <section>
+      <h2>Tarifs</h2>
+      <p class="section-sub">Personne ne fixe le prix : il s'ajuste tout seul à chaque époque selon
+        la charge du réseau. Plus il y a de mineurs, plus il baisse ; plus il y a de demande, plus
+        il monte.</p>
+
+      <div class="grid c3">
+        <div class="card stat">
+          <div class="value" id="p-price">—</div>
+          <div class="label">USDT par million de tokens</div>
+        </div>
+        <div class="card stat">
+          <div class="value" id="p-model">—</div>
+          <div class="label">modèle servi</div>
+        </div>
+        <div class="card stat">
+          <div class="value" id="p-rpm">—</div>
+          <div class="label">requêtes par minute et par compte</div>
+        </div>
+      </div>
+      <p class="muted" id="p-rule" style="margin-top:12px;"></p>
+    </section>
+
+    <section>
+      <h2>Formules</h2>
+      <p class="section-sub">Du crédit prépayé, sans abonnement caché : vous consommez au token, au prix
+        du moment, jusqu'à épuisement du crédit.</p>
+      <div class="grid c3" id="p-plans"></div>
+      <p style="margin-top:16px;"><a class="btn primary" href="pay.html">Ajouter du crédit</a></p>
+    </section>
+
+    <section>
+      <h2>Historique du prix</h2>
+      <table>
+        <thead><tr><th>Époque</th><th class="right">USDT / million de tokens</th><th class="right">Charge de l'époque précédente</th></tr></thead>
+        <tbody id="p-history"></tbody>
+      </table>
+    </section>
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/pricing.js"></script>
+</body>
+</html>

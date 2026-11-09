@@ -1,0 +1,6 @@
+# Vercel ne publie que le site statique (web/). Le coordinateur, l'IA et les
+# contrats tournent ailleurs (serveur, chaîne) : on ne les envoie pas, ce qui
+# évite aussi toute détection automatique de framework Python.
+/*
+!/web
+!/vercel.json

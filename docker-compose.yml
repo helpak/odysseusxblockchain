@@ -1,24 +1,27 @@
+name: aql-network
+
+# Pile du réseau AQL :
+#   - coordinator : IA (API compatible OpenAI), comptes, prix, jobs, époques (port 9000)
+#   - web         : le site public (port 8088) — en production, publié sur Vercel
+# Profils optionnels :
+#   --profile oracle    : un oracle (vote des époques on-chain) ; un par opérateur
+#   --profile miner     : des nœuds de minage (modèle local Ollama + mineur GPU + stockage)
+#   --profile workspace : l'espace de travail Odysseus (ai/), branchable sur le réseau
+#                         comme fournisseur de modèle compatible OpenAI
+
 services:
   odysseus:
-    build: .
+    profiles: ["workspace"]
+    build: ./ai
     ports:
       - "${APP_BIND:-127.0.0.1}:${APP_PORT:-7000}:7000"
     volumes:
       - ./data:/app/data:z
       - ./logs:/app/logs:z
-      # Cookbook remote-server SSH identity. Odysseus can generate a key here;
-      # add the shown public key to each remote server's authorized_keys.
       - ./data/ssh:/app/.ssh:z
-      # Cookbook local model cache. Inside Docker, "Local" means the Odysseus
-      # container, so persist its HuggingFace cache under ./data/huggingface.
       - ./data/huggingface:/app/.cache/huggingface:z
-      # Cookbook-installed Python CLIs/packages (vLLM, llama-cpp-python, etc.)
-      # land under /app/.local for the odysseus user. Persist them so a
-      # container recreate does not silently remove installed serve engines.
       - ./data/local:/app/.local:z
     extra_hosts:
-      # Lets the container reach local services on the Docker host, including
-      # Ollama at http://host.docker.internal:11434.
       - "host.docker.internal:host-gateway"
     environment:
       - LLM_HOST=${LLM_HOST:-localhost}
@@ -52,14 +55,6 @@ services:
       - GOOGLE_PSE_CX=${GOOGLE_PSE_CX:-}
       - TAVILY_API_KEY=${TAVILY_API_KEY:-}
       - SERPER_API_KEY=${SERPER_API_KEY:-}
-      # PUID / PGID — the user/group the container drops to before
-      # running uvicorn (entrypoint also chowns /app/data + /app/logs
-      # to match, so bind-mounted files stay editable from the host).
-      # 1000 is the default first user on most Linux installs. If your
-      # host user has a different id, override here or via .env, e.g.:
-      #   PUID=1001
-      #   PGID=1001
-      # Find yours with:  id -u  /  id -g
       - PUID=${PUID:-1000}
       - PGID=${PGID:-1000}
     depends_on:
@@ -70,6 +65,7 @@ services:
     restart: unless-stopped
 
   chromadb:
+    profiles: ["workspace"]
     image: docker.io/chromadb/chroma:latest
     ports:
       - "${CHROMADB_BIND:-127.0.0.1}:8100:8000"
@@ -80,11 +76,8 @@ services:
     restart: unless-stopped
 
   searxng:
-    # Pinned, not :latest — odysseus waits on searxng's healthcheck
-    # (depends_on: condition: service_healthy), so a broken upstream `latest`
-    # tag blocks the whole app from starting. 2026.6.2 crashes on boot with
-    # `KeyError: 'default_doi_resolver'`, failing the healthcheck (issue #1414).
-    # Bump this deliberately after verifying a newer tag boots clean.
+    profiles: ["workspace"]
+    # Pinnée, pas :latest — odysseus attend le healthcheck de searxng.
     image: docker.io/searxng/searxng:2026.5.31-7159b8aed
     entrypoint:
       - /bin/sh
@@ -103,17 +96,10 @@ services:
       - "127.0.0.1:8080:8080"
     volumes:
       - searxng-data:/etc/searxng
-      - ./config/searxng/settings.yml:/tmp/searxng-settings.yml.template:ro,z
+      - ./ai/config/searxng/settings.yml:/tmp/searxng-settings.yml.template:ro,z
     environment:
       - SEARXNG_BASE_URL=http://localhost:8080/
       - SEARXNG_SECRET=${SEARXNG_SECRET:-}
-    # The official searxng image runs as the non-root `searxng` user, but its
-    # entrypoint still needs to chown /etc/searxng on first boot, drop privs via
-    # su-exec, and (with our wrapper above) write settings.yml into the named
-    # volume. Without these capabilities the wrapper aborts at the redirection
-    # with EACCES and the container fails its healthcheck with permission
-    # errors during setup. Mirrors the cap set recommended by the upstream
-    # searxng-docker compose file. See issue #721.
     cap_drop:
       - ALL
     cap_add:
@@ -130,6 +116,7 @@ services:
     restart: unless-stopped
 
   ntfy:
+    profiles: ["workspace"]
     image: docker.io/binwiederhier/ntfy
     command: serve
     ports:
@@ -140,7 +127,139 @@ services:
       - NTFY_BASE_URL=${NTFY_BASE_URL:-http://localhost:8091}
     restart: unless-stopped
 
+  coordinator:
+    build: ./network/coordinator
+    ports:
+      - "${COORDINATOR_BIND:-127.0.0.1}:${COORDINATOR_PORT:-9000}:9000"
+    volumes:
+      # Base du coordinateur et règlements d'époque (racines + preuves publiques).
+      - ./data/coordinator:/app/data:z
+      - ./data/settlements:/app/settlements:z
+    environment:
+      - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
+      # GENESIS_TS : identique au contrat (affiché par `npm run deploy`).
+      - GENESIS_TS=${GENESIS_TS:-0}
+      - NETWORK_MODEL=${NETWORK_MODEL:-qwen2.5:7b-instruct}
+      - RPC_URL=${RPC_URL:-}
+      - AQL_NETWORK_ADDRESS=${AQL_NETWORK_ADDRESS:-}
+      - CHAIN_START_BLOCK=${CHAIN_START_BLOCK:-0}
+      - CHAIN_CONFIRMATIONS=${CHAIN_CONFIRMATIONS:-3}
+      - PRICE_START_MICRO=${PRICE_START_MICRO:-2000000}
+      - REQUESTS_PER_MINUTE=${REQUESTS_PER_MINUTE:-30}
+      - VERIFY_SAMPLE_RATE=${VERIFY_SAMPLE_RATE:-0.05}
+      - BENCH_INTERVAL_SECONDS=${BENCH_INTERVAL_SECONDS:-7200}
+      - BENCH_REFERENCES=${BENCH_REFERENCES:-[]}
+      - GPU_POOL_BPS=${GPU_POOL_BPS:-7000}
+      - STORAGE_REPLICATION=${STORAGE_REPLICATION:-3}
+      - CORS_ALLOW_ORIGINS=${CORS_ALLOW_ORIGINS:-*}
+    restart: unless-stopped
+
+  web:
+    image: docker.io/nginx:alpine
+    ports:
+      - "${WEB_BIND:-127.0.0.1}:${WEB_PORT:-8088}:80"
+    volumes:
+      - ./web:/usr/share/nginx/html:ro,z
+    restart: unless-stopped
+
+
+  # ---- Profil oracle : publication automatique des époques on-chain ----
+
+  oracle:
+    profiles: ["oracle"]
+    build:
+      context: ./contracts
+      dockerfile: Dockerfile.oracle
+    environment:
+      # Chaque opérateur d'oracle tourne sur SA machine et vise le coordinateur
+      # public (https://api.<domaine>) ; la valeur par défaut sert aux essais locaux.
+      - COORDINATOR_URL=${COORDINATOR_URL:-http://coordinator:9000}
+      - COORDINATOR_ADMIN_TOKEN=${COORDINATOR_ADMIN_TOKEN:-}
+      - RPC_URL=${RPC_URL:-}
+      - ORACLE_PRIVATE_KEY=${ORACLE_PRIVATE_KEY:-}
+      - AQL_NETWORK_ADDRESS=${AQL_NETWORK_ADDRESS:-}
+      - POLL_SECONDS=${ORACLE_POLL_SECONDS:-300}
+    volumes:
+      - oracle-state:/state
+    restart: unless-stopped
+
+  # ---- Profil miner : des nœuds de minage sur cette machine ----
+
+  ollama:
+    profiles: ["miner"]
+    image: docker.io/ollama/ollama:latest
+    # Démarre le serveur puis télécharge le modèle du réseau (une seule fois,
+    # conservé dans le volume). GPU NVIDIA : ajouter une réservation de
+    # périphérique, cf. ai/docker/gpu.nvidia.yml pour la syntaxe.
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5; ollama pull \"$$NETWORK_MODEL\"; wait"]
+    environment:
+      - NETWORK_MODEL=${NETWORK_MODEL:-qwen2.5:7b-instruct}
+    volumes:
+      - ollama-models:/root/.ollama
+    restart: unless-stopped
+
+  gpu-miner:
+    profiles: ["miner"]
+    build: ./network/miner
+    command:
+      - "--wallet"
+      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      - "${MINER_WALLET:-}"
+      - "--mode"
+      - "gpu"
+      - "--coordinator"
+      - "http://coordinator:9000"
+      - "--name"
+      - "gpu-miner"
+      - "--state-file"
+      - "/state/miner_state.json"
+    environment:
+      # Serveur de modèle : le service ollama ci-dessus par défaut.
+      - MODEL_ENDPOINT=${MINER_MODEL_ENDPOINT:-http://ollama:11434/v1}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - gpu-miner-state:/state
+    depends_on:
+      coordinator:
+        condition: service_started
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+  storage-node:
+    profiles: ["miner"]
+    build: ./network/miner
+    command:
+      - "--wallet"
+      # Si vide, le mineur refuse de démarrer avec un message explicite.
+      - "${MINER_WALLET:-}"
+      - "--mode"
+      - "storage"
+      - "--allocate-gb"
+      - "${MINER_STORAGE_GB:-50}"
+      - "--storage-path"
+      - "/storage"
+      - "--coordinator"
+      - "http://coordinator:9000"
+      - "--name"
+      - "storage-node"
+      - "--state-file"
+      - "/state/miner_state.json"
+    volumes:
+      - storage-node-data:/storage
+      - storage-node-state:/state
+    depends_on:
+      coordinator:
+        condition: service_started
+    restart: unless-stopped
+
 volumes:
   searxng-data:
   chromadb-data:
   ntfy-cache:
+  oracle-state:
+  ollama-models:
+  gpu-miner-state:
+  storage-node-data:
+  storage-node-state:

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Miner — AQL Network</title>
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<header id="site-header"></header>
+
+<main>
+  <div class="container">
+
+    <section class="hero">
+      <h1>Miner de l'<span class="grad">AQL</span></h1>
+      <p class="lead">Un seul fichier Python, zéro dépendance. Vous donnez votre wallet, vous
+        choisissez ce que vous fournissez, et vos gains (AQL + USDT) s'accumulent à chaque époque.
+        Tout le travail payé sert réellement l'IA.</p>
+    </section>
+
+    <section>
+      <h2>1. Choisissez ce que vous fournissez</h2>
+      <div class="grid c3" style="grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));">
+        <div class="card choice selected" id="choice-gpu">
+          <h3>Calcul (GPU)</h3>
+          <p>Votre machine fait tourner le modèle du réseau (<strong id="net-model">…</strong>) et
+          <strong>sert</strong> les utilisateurs (payé en USDT + AQL), <strong>contrôle</strong> d'autres
+          mineurs, <strong>propose et mesure</strong> des améliorations (AQL). Il faut un serveur de
+          modèle local compatible OpenAI : Ollama, vLLM ou llama.cpp.</p>
+        </div>
+        <div class="card choice" id="choice-storage">
+          <h3>Stockage</h3>
+          <p>Votre disque héberge des données chiffrées du réseau. Vous êtes payé en AQL à chaque
+          <strong>preuve de stockage</strong>, impossible à fournir sans détenir les données.</p>
+        </div>
+      </div>
+
+      <div id="opt-gpu" class="card" style="margin-top:18px;">
+        <label for="model-endpoint">Adresse de votre serveur de modèle local</label>
+        <input type="text" id="model-endpoint" value="http://localhost:11434/v1">
+        <p class="muted" style="font-size:0.85rem;">Avec Ollama : <span class="mono" id="pull-cmd">ollama pull …</span>
+          puis laissez Ollama tourner. Modèle sous licence permissive (Apache 2.0) : usage commercial sans restriction.</p>
+      </div>
+
+      <div id="opt-storage" class="card" style="margin-top:18px; display:none;">
+        <label for="allocate-gb">Espace alloué au réseau (Go)</label>
+        <input type="number" id="allocate-gb" value="100" min="1">
+        <label for="storage-path">Dossier de stockage</label>
+        <input type="text" id="storage-path" value="./aql_storage">
+      </div>
+    </section>
+
+    <section>
+      <h2>2. Votre wallet</h2>
+      <p class="section-sub">L'adresse EVM (MetaMask, Rabby, Ledger…) qui recevra vos gains. Le mineur
+        n'a <strong>jamais</strong> besoin de votre clé privée.</p>
+      <input type="text" id="wallet" class="mono" placeholder="0x…" spellcheck="false">
+      <p class="muted" id="wallet-status" style="font-size:0.88rem;"></p>
+    </section>
+
+    <section>
+      <h2>3. Lancez le mineur</h2>
+      <p class="section-sub">Prérequis : Python 3.10+. Téléchargez
+        <span class="mono">network/miner/aql_miner.py</span> depuis le dépôt du projet, puis :</p>
+      <pre class="cmd" id="command">…</pre>
+      <div class="copy-row"><button class="btn" id="btn-copy">Copier la commande</button></div>
+      <div class="banner info">
+        Chaque nœud démarre avec une réputation de 10. Un contrôle réussi rapporte +1, une réponse
+        fausse coûte −3 et ses gains. Sous 5, le nœud ne sert plus. Diviser sa machine en plusieurs
+        nœuds ne rapporte rien de plus : les gains sont proportionnels au travail vérifié.
+        Réclamez vos gains sur <a href="account.html">Mon compte</a>.
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer id="site-footer"></footer>
+<script src="assets/config.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/mine.js"></script>
+</body>
+</html>
