@@ -58,7 +58,7 @@
     $("net-model").textContent = networkModel;
     render();
   }).catch(() => {
-    $("net-model").textContent = "indisponible (coordinateur injoignable)";
+    $("net-model").textContent = "le modèle du réseau, affiché au démarrage du mineur";
   });
   render();
 })();

@@ -29,4 +29,8 @@ window.AQL_CONFIG = {
   // Service d'achat d'USDT par carte bancaire (le service vérifie l'identité
   // de l'acheteur ; le protocole ne touche jamais de monnaie classique).
   ONRAMP_URL: "",
+
+  // Dépôt public du code (liens « Code source », « Registre des décisions »).
+  // Vide : les liens ne sont pas affichés.
+  REPO_URL: "",
 };

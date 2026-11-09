@@ -3,95 +3,228 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>AQL Network — une IA servie et améliorée par ses mineurs</title>
-<meta name="description" content="Une IA open source servie et améliorée par un réseau de mineurs. On mine de l'AQL en fournissant une puissance réellement utilisée ; les détenteurs reçoivent 33 % des paiements.">
+<title>AQL Network — l'IA qui n'appartient à personne</title>
+<meta name="description" content="Une IA servie, contrôlée et améliorée par ses mineurs. Chaque paiement est partagé automatiquement : 67 % aux mineurs, 33 % aux détenteurs d'AQL. Aucun premine, aucun administrateur.">
+<meta name="theme-color" content="#05060a">
+<meta property="og:title" content="AQL Network — l'IA qui n'appartient à personne">
+<meta property="og:description" content="Servie, contrôlée et améliorée par ses mineurs. Aucun premine, aucun administrateur. 67 % de chaque paiement aux mineurs, 33 % aux détenteurs.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
 <link rel="stylesheet" href="assets/style.css">
+<link rel="stylesheet" href="assets/home.css">
 </head>
 <body>
 <header id="site-header"></header>
 
 <main>
-  <div class="container">
-
-    <section class="hero">
-      <h1>Une IA servie et améliorée<br><span class="grad">par ses mineurs</span></h1>
+  <!-- ======================================================= HERO -->
+  <section class="home-hero">
+    <canvas id="net-canvas" aria-hidden="true"></canvas>
+    <div class="container hero-inner">
+      <span class="eyebrow"><span class="dot" id="net-dot"></span><span id="net-status">Protocole AQL · v1</span></span>
+      <h1>L'IA qui n'appartient<br><span class="grad">à personne.</span></h1>
       <p class="lead">
-        Pas d'entreprise au centre, pas d'administrateur, pas de premine. Les mineurs
-        font tourner l'IA, la vérifient et l'améliorent ; ils sont payés en
-        <strong>AQL</strong>, dont l'émission est divisée par 2 tous les 2 ans, et en
-        USDT par les utilisateurs. Les détenteurs d'AQL reçoivent 33 % de chaque paiement.
+        <strong>Servie</strong> par ses mineurs. <strong>Contrôlée</strong> par ses mineurs.
+        <strong>Améliorée</strong> par ses mineurs. Chaque paiement est partagé entre ceux qui la
+        font tourner et ceux qui la détiennent, automatiquement, par un contrat que personne ne contrôle.
       </p>
       <div class="cta-row">
-        <a class="btn primary" href="chat.html">Utiliser l'IA</a>
-        <a class="btn" href="mine.html">Miner</a>
-        <a class="btn" href="account.html">Mon compte</a>
+        <a class="btn primary" href="chat.html">Essayer l'IA <span class="arrow">→</span></a>
+        <a class="btn" href="mine.html">Miner de l'AQL</a>
       </div>
-    </section>
-
-    <section>
-      <div class="grid c4">
-        <div class="card stat"><div class="value" id="s-price">—</div><div class="label">USDT / million de tokens</div></div>
-        <div class="card stat"><div class="value" id="s-serving">—</div><div class="label">mineurs qui servent l'IA</div></div>
-        <div class="card stat"><div class="value" id="s-tokens">—</div><div class="label">tokens servis aujourd'hui</div></div>
-        <div class="card stat"><div class="value" id="s-bench">—</div><div class="label">dernier benchmark du réseau</div></div>
-        <div class="card stat"><div class="value" id="s-reward">—</div><div class="label">AQL émis max. aujourd'hui</div></div>
-        <div class="card stat"><div class="value" id="s-epoch-end">—</div><div class="label">fin de l'époque dans</div></div>
-        <div class="card stat"><div class="value" id="s-halving">—</div><div class="label">prochain halving dans</div></div>
-        <div class="card stat"><div class="value" id="s-promoted">—</div><div class="label">améliorations adoptées</div></div>
+      <div class="hero-facts">
+        <div><b>0</b><span>premine</span></div>
+        <div><b>67 / 33</b><span>mineurs / détenteurs</span></div>
+        <div><b>÷ 2</b><span>tous les 2 ans</span></div>
+        <div><b>0</b><span>administrateur</span></div>
       </div>
-      <p class="stats-note" id="s-note">Connexion au coordinateur…</p>
-    </section>
+    </div>
+  </section>
 
-    <section>
-      <h2>Comment ça marche</h2>
-      <div class="flow">
-        <div class="step"><div><strong>Vous utilisez l'IA et payez en USDT.</strong>
-          <p>Crédit prépayé, par wallet ou par carte via un service d'achat d'USDT. Le prix par token
-          s'ajuste tout seul selon la charge du réseau.</p></div></div>
-        <div class="step"><div><strong>Le contrat répartit chaque paiement : 67 % / 33 %.</strong>
-          <p>67 % aux mineurs qui ont servi l'IA, 33 % aux détenteurs d'AQL qui stakent. Aucune part
-          pour un fondateur ou une société.</p></div></div>
-        <div class="step"><div><strong>Les mineurs servent, contrôlent et améliorent l'IA.</strong>
-          <p>Chaque réponse peut être rejouée par un autre mineur ; en cas d'écart, un troisième départage.
-          Les améliorations ne sont adoptées que si elles font mieux sur un benchmark.</p></div></div>
-        <div class="step"><div><strong>L'AQL se mine comme le Bitcoin, mais en travail utile.</strong>
-          <p>Une quantité fixe par jour, divisée par 2 tous les 2 ans, partagée selon le travail vérifié.
-          Arriver tôt rapporte plus d'AQL ; garder ses AQL stakés rapporte une part des paiements.</p></div></div>
-      </div>
-    </section>
-
-    <section>
-      <h2>Les règles, inscrites dans le code</h2>
-      <div class="grid c3">
-        <div class="card">
-          <h3>Le jeton AQL</h3>
-          <table>
-            <tr><td>Offre maximale</td><td class="num right">1 000 000 000</td></tr>
-            <tr><td>Premine / part fondateur</td><td class="num right">0</td></tr>
-            <tr><td>Émission max. par jour</td><td class="num right">684 931,5</td></tr>
-            <tr><td>Halving</td><td class="num right">tous les 730 jours</td></tr>
-            <tr><td>Prix</td><td class="num right">fixé par le marché</td></tr>
-          </table>
+  <!-- ======================================================= POURQUOI -->
+  <section class="reveal" id="why">
+    <div class="container">
+      <span class="kicker">Pourquoi c'est important</span>
+      <h2>Les IA les plus puissantes appartiennent<br>à une poignée d'entreprises.</h2>
+      <p class="section-sub">Elles décident de ce que l'IA fait, de son prix, et gardent ce qu'elle rapporte.
+        AQL inverse le modèle : l'IA appartient à ceux qui la font vivre.</p>
+      <div class="versus">
+        <div class="card old">
+          <h3>Le modèle actuel</h3>
+          <ul>
+            <li>Une entreprise possède l'IA et les serveurs qui la font tourner.</li>
+            <li>Ce que l'IA rapporte va à ses actionnaires.</li>
+            <li>Les règles changent quand elle le décide.</li>
+            <li>Vous ne voyez rien de ce qui se passe à l'intérieur.</li>
+          </ul>
         </div>
-        <div class="card">
-          <h3>Chaque paiement</h3>
-          <table>
-            <tr><td>Mineurs (service de l'IA)</td><td class="num right">67 %</td></tr>
-            <tr><td>Détenteurs d'AQL stakés</td><td class="num right">33 %</td></tr>
-            <tr><td colspan="2" class="muted">Versé à la seconde sur 7 jours aux stakers.
-              Poids ×1 sans verrou, jusqu'à ×2 avec 365 jours de verrou.</td></tr>
-          </table>
-        </div>
-        <div class="card">
-          <h3>Personne aux commandes</h3>
-          <p>Aucun administrateur après le déploiement. Chaque journée est validée par une majorité
-          d'oracles indépendants, avec des plafonds stricts. Le registre complet des décisions
-          (et de leurs limites) est public dans le dépôt.</p>
+        <div class="card new">
+          <h3>Le modèle AQL</h3>
+          <ul>
+            <li>Des machines indépendantes, partout dans le monde, la font tourner.</li>
+            <li>67 % de chaque paiement va à ceux qui la servent, 33 % à ceux qui détiennent l'AQL.</li>
+            <li>Les règles sont dans un contrat que personne ne peut modifier.</li>
+            <li>Le code, les tests et chaque paiement sont publics.</li>
+          </ul>
         </div>
       </div>
-    </section>
+    </div>
+  </section>
 
-  </div>
+  <!-- ======================================================= COMMENT -->
+  <section class="reveal" id="how">
+    <div class="container">
+      <span class="kicker">Comment ça marche</span>
+      <h2>Un circuit fermé, sans intermédiaire.</h2>
+      <p class="section-sub">Personne ne détient l'argent. Le contrat le reçoit et le répartit dans la même transaction.</p>
+
+      <div class="circuit">
+        <div class="c-node">
+          <span class="k">Utilisateurs</span>
+          <strong>Vous payez en USDT</strong>
+          <p>Crédit prépayé, consommé au token, au prix du moment.</p>
+        </div>
+        <div class="c-line" aria-hidden="true"></div>
+        <div class="c-node core">
+          <span class="k">Contrat AQLNetwork</span>
+          <strong>Répartition automatique</strong>
+          <p>Aucun administrateur. Chaque journée validée par une majorité d'oracles indépendants.</p>
+        </div>
+        <div class="c-line" aria-hidden="true"></div>
+        <div class="c-split">
+          <div class="c-node"><span class="pct">67 %</span><p>aux mineurs qui ont servi les requêtes</p></div>
+          <div class="c-node"><span class="pct">33 %</span><p>aux détenteurs d'AQL qui stakent</p></div>
+        </div>
+      </div>
+
+      <div class="pillars">
+        <div class="card">
+          <span class="num-tag">01 — Servir</span>
+          <h3>Des machines indépendantes, pas un datacenter</h3>
+          <p>Chaque requête est traitée par un mineur qui fait tourner le modèle du réseau sur sa propre machine.</p>
+        </div>
+        <div class="card">
+          <span class="num-tag">02 — Contrôler</span>
+          <h3>Tricher ne paie pas</h3>
+          <p>Une partie des réponses est rejouée par un autre mineur ; en cas d'écart, un troisième départage.
+            Celui qui s'écarte perd ses gains et sa réputation.</p>
+        </div>
+        <div class="card">
+          <span class="num-tag">03 — Améliorer</span>
+          <h3>Elle progresse toute seule</h3>
+          <p>Les mineurs proposent de meilleures versions. Seules celles qui font mieux sur un test public,
+            mesuré par d'autres mineurs, sont adoptées.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= CHIFFRES -->
+  <section class="reveal" id="code">
+    <div class="container">
+      <span class="kicker">Gravé dans le code</span>
+      <h2>Des règles que personne ne peut changer.</h2>
+      <p class="section-sub">Pas de promesse : un contrat. Ces chiffres sont vérifiables par n'importe qui.</p>
+      <div class="bignums">
+        <div class="wide"><b data-count="1000000000">1 000 000 000</b><span>AQL au maximum. Jamais un de plus.</span></div>
+        <div><b class="accent" data-count="0">0</b><span>AQL créé pour un fondateur, une équipe ou une société.</span></div>
+        <div><b data-count="684931">684 931</b><span>AQL au plus par jour, partagés selon le travail vérifié.</span></div>
+        <div><b data-count="730">730</b><span>jours entre deux halvings, comme Bitcoin.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= ÉMISSION -->
+  <section class="reveal" id="emission">
+    <div class="container emission">
+      <div>
+        <span class="kicker">Émission</span>
+        <h2>Arriver tôt compte.</h2>
+        <p>La moitié des AQL est émise pendant les deux premières années. Ensuite, la récompense
+          quotidienne est divisée par deux tous les deux ans. Le calendrier suit l'horloge de la chaîne :
+          personne ne peut l'accélérer.</p>
+        <p>Plus vous apportez tôt de puissance utile, plus vous accumulez d'AQL, et plus votre part
+          des paiements est grande si vous les stakez.</p>
+      </div>
+      <div class="card chart-card">
+        <div id="emission-chart"></div>
+        <div class="chart-legend">
+          <span><i style="background:#c8ff3a"></i>AQL émis par période de 2 ans</span>
+          <span><i style="background:#7b61ff"></i>offre totale cumulée</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= PARTICIPER -->
+  <section class="reveal" id="join">
+    <div class="container">
+      <span class="kicker">Participer</span>
+      <h2>Trois façons d'en faire partie.</h2>
+      <div class="join">
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-5A8 8 0 1 1 21 12z"/></svg></div>
+          <h3>Utiliser</h3>
+          <p>Une IA payée au token, au prix du marché, sans abonnement caché. Votre historique reste chez vous.</p>
+          <a class="btn primary" href="chat.html">Essayer l'IA <span class="arrow">→</span></a>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3"/></svg></div>
+          <h3>Miner</h3>
+          <p>Votre GPU sert l'IA, votre disque garde sa mémoire. Un seul fichier à lancer. Payé en AQL et en USDT.</p>
+          <a class="btn" href="mine.html">Commencer à miner <span class="arrow">→</span></a>
+        </div>
+        <div class="card">
+          <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3 6 6 1-4.5 4.5L18 20l-6-3-6 3 1.5-6.5L3 9l6-1z"/></svg></div>
+          <h3>Détenir</h3>
+          <p>Stakez vos AQL : 33 % de chaque paiement, au prorata du temps passé staké et de la durée du verrou.</p>
+          <a class="btn" href="account.html">Mon compte <span class="arrow">→</span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= EN DIRECT -->
+  <section class="reveal" id="live">
+    <div class="container">
+      <div class="live-head">
+        <div>
+          <span class="kicker">En direct</span>
+          <h2 id="live-title">Le réseau démarre.</h2>
+        </div>
+        <span class="pill" id="live-pill"><span class="dot off"></span>lancement en préparation</span>
+      </div>
+      <p class="live-off" id="live-off">Les statistiques en direct (mineurs connectés, tokens servis, prix,
+        benchmark) apparaîtront ici dès la mise en service du réseau.</p>
+      <div class="grid c4" id="live-stats" hidden>
+        <div class="card stat"><div class="value" id="s-serving">0</div><div class="label">mineurs prêts à servir</div></div>
+        <div class="card stat"><div class="value" id="s-tokens">0</div><div class="label">tokens servis aujourd'hui</div></div>
+        <div class="card stat"><div class="value" id="s-price">0</div><div class="label">USDT / million de tokens</div></div>
+        <div class="card stat"><div class="value" id="s-bench">n/d</div><div class="label">dernier benchmark</div></div>
+        <div class="card stat"><div class="value" id="s-reward">0</div><div class="label">AQL émis max. aujourd'hui</div></div>
+        <div class="card stat"><div class="value" id="s-epoch-end">0</div><div class="label">fin de la journée dans</div></div>
+        <div class="card stat"><div class="value" id="s-halving">0</div><div class="label">prochain halving dans</div></div>
+        <div class="card stat"><div class="value" id="s-promoted">0</div><div class="label">améliorations adoptées</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================= VÉRIFIER -->
+  <section class="reveal">
+    <div class="container">
+      <div class="verify">
+        <h2>Ne nous croyez pas.<br><span class="grad">Vérifiez.</span></h2>
+        <p>Tout est ouvert : le code, les contrats, les tests d'attaque, le benchmark public et le registre
+          de chaque décision, limites comprises.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="power.html">Voir le benchmark public <span class="arrow">→</span></a>
+          <a class="btn" id="repo-link" href="#" hidden>Lire le code</a>
+        </div>
+      </div>
+    </div>
+  </section>
 </main>
 
 <footer id="site-footer"></footer>
